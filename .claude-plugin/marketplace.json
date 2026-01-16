@@ -10,7 +10,7 @@
     {
       "name": "my-personal-tools",
       "description": "Personal productivity tools: DDD/OOP, React/Next.js, DRY detection, code review with specialized agents",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "author": {
         "name": "markky21"
       },
