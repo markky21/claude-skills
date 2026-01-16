@@ -1,9 +1,9 @@
 {
   "name": "my-personal-tools",
-  "description": "Personal productivity tools: DDD/OOP patterns, React/Next.js validation, DRY detection, code review, and git workflows",
-  "version": "1.2.0",
+  "description": "Personal productivity tools: DDD/OOP patterns, React/Next.js validation, DRY detection, code review, and git workflows with specialized agents",
+  "version": "1.3.0",
   "author": {
     "name": "markky21"
   },
-  "keywords": ["personal", "productivity", "skills", "ddd", "react", "nextjs", "git", "dry", "code-review"]
+  "keywords": ["personal", "productivity", "skills", "agents", "ddd", "react", "nextjs", "git", "dry", "code-review", "clean-code"]
 }
