@@ -1,6 +1,6 @@
 # my-personal-tools
 
-Personal productivity tools for Claude Code: DDD/OOP patterns, React/Next.js validation, and git workflows.
+Personal productivity tools for Claude Code: DDD/OOP patterns, React/Next.js validation, DRY detection, and git workflows.
 
 ## Commands
 
@@ -14,6 +14,7 @@ Personal productivity tools for Claude Code: DDD/OOP patterns, React/Next.js val
 |-------|-------------|
 | `ddd-oop` | Domain-Driven Design & OOP patterns - rich domain models, aggregates, value objects |
 | `react-nextjs-validator` | React 19+ & Next.js 15+ best practices, hooks selection, performance optimization |
+| `dry-violations` | DRY violation detection - search before implementing, avoid duplicate constants/enums/logic |
 
 ## Directories
 
