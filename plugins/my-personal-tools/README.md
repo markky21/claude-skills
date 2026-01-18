@@ -64,14 +64,21 @@ To add validators from external plugins, declare them in your plugin's `plugin.j
   "name": "my-plugin",
   "validators": [
     {
-      "agentName": "my-validator",
-      "displayName": "My Validator",
-      "description": "Validates specific patterns",
-      "category": "custom"
+      "agentName": "my-validator",           // Required: must match agent filename
+      "displayName": "My Validator",         // Required: shown in configurator
+      "description": "Validates specific patterns",  // Required: 1-2 sentence description
+      "category": "custom"                   // Optional: for UI grouping
     }
   ]
 }
 ```
+
+**Field Documentation:**
+- **agentName** (Required): Must match the agent filename (without .md extension)
+- **displayName** (Required): Human-readable name shown in the configurator UI
+- **description** (Required): Brief 1-2 sentence explanation of what the validator checks
+- **category** (Optional): Grouping category for UI organization
+- **version** (Optional): For tracking validator updates
 
 See [VALIDATOR_INTEGRATION.md](docs/VALIDATOR_INTEGRATION.md) for complete guide.
 
@@ -89,6 +96,8 @@ The command will:
 
 **Validator Output Format:**
 
+**Important:** Spacing is critical for parsing. External validators must conform to exact format requirements.
+
 All validators must output findings in this standard format:
 
 ```
@@ -97,7 +106,17 @@ All validators must output findings in this standard format:
    💡 [fix recommendation]
 ```
 
+**Critical Requirements:**
+- Severity emoji: 🔴 (CRITICAL), 🟠 (HIGH), 🟡 (MEDIUM), 🟢 (LOW)
+- Exactly ONE space after emoji before severity word
+- Location line: exactly THREE spaces before 📍, ONE space after
+- Recommendation line: exactly THREE spaces before 💡, ONE space after
+- Missing or incorrect spacing causes parsing failures
+
 External validators that don't conform to this format will be flagged during discovery.
+
+**Before Publishing Your Validator:**
+See [VALIDATOR_INTEGRATION.md](docs/VALIDATOR_INTEGRATION.md) Step 5 for how to validate your output format using the fix-loop-output-validator agent.
 
 ## Directories
 
