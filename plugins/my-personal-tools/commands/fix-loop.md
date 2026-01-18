@@ -214,11 +214,23 @@ For each validator output line:
    - 🟡 → MEDIUM
    - 🟢 → LOW
 3. Check if severity level is in selectedSeverity
-4. If yes: scan next lines for location and recommendation
-   - Look for 📍 pattern for location
-   - Look for 💡 pattern for recommendation
-5. Combine into finding object: {severity, location, description, recommendation}
-6. Add to findings list
+4. If yes: scan next lines to build complete finding
+   - Scan forward from current line until:
+     - You find a line with 📍 pattern (location)
+     - You find a line with 💡 pattern (recommendation)
+     - OR until the next severity emoji (🔴/🟠/🟡/🟢) appears
+     - OR until end of validator output
+   - If BOTH 📍 and 💡 patterns are found: create complete finding object
+   - If EITHER pattern is missing: log warning and SKIP this finding
+     ```
+     ⚠️ INCOMPLETE: Finding missing required field in {validator_name}:
+        {brief description}
+        (Skipping - location and recommendation required)
+     ```
+5. Combine into finding only if COMPLETE: {severity, location, description, recommendation}
+   - All four fields required
+   - Add to findings list ONLY if complete
+   - Incomplete findings logged and skipped
 
 **Error handling:**
 
