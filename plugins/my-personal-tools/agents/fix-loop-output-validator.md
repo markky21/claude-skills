@@ -29,10 +29,11 @@ Check if the output conforms to the required format:
 
 ### Rules
 
-1. Each finding must have:
-   - Severity line: emoji + space + severity word + colon + space + description
-   - Location line: 📍 + space + file path + colon + line number
-   - Recommendation line: 💡 + space + recommendation text
+1. Each finding must have ALL THREE (no exceptions):
+   - Severity line: {emoji} {SEVERITY}: {description}
+   - Location line: (3 spaces)📍 {filepath}:{line_number}
+   - Recommendation line: (3 spaces)💡 {recommendation_text}
+   All fields are mandatory - finding is invalid if any field is missing
 
 2. Allowed emojis: 🔴 (CRITICAL), 🟠 (HIGH), 🟡 (MEDIUM), 🟢 (LOW)
 
@@ -43,6 +44,59 @@ Check if the output conforms to the required format:
 5. Line number must be numeric
 
 6. No blank lines within a single finding; blank lines OK between findings
+
+### Format Specifications (for clarity)
+
+**Severity Line:**
+- Format: `{emoji} {severity}: {description}`
+- Exactly ONE space between emoji and severity word
+- Exactly ONE space after colon before description
+- No additional whitespace (tabs, multiple spaces not allowed)
+
+**Location Line:**
+- Format: `   📍 {filepath}:{line_number}`
+- Exactly THREE spaces indentation before 📍
+- Exactly ONE space after 📍 before filepath
+- Filepath must be relative path with file extension (.ts, .tsx, .js, .jsx, .py, .java, etc.)
+  - Relative paths from project root (e.g., `src/components/Form.tsx`)
+  - Windows paths allowed with backslashes (e.g., `src\components\Form.tsx`)
+  - Multiple dots in filename OK (e.g., `component.test.ts`)
+- Line number must be positive integer (1 or greater)
+
+**Recommendation Line:**
+- Format: `   💡 {recommendation_text}`
+- Exactly THREE spaces indentation before 💡
+- Exactly ONE space after 💡 before text
+
+### Edge Cases
+
+**Empty Output (No findings):**
+If validator finds no issues:
+```
+✅ VALID: {validator_name} output conforms to format
+   - 0 findings detected
+   - Severity breakdown: 0 CRITICAL, 0 HIGH, 0 MEDIUM, 0 LOW
+```
+
+JSON:
+```json
+{
+  "validator": "my-validator",
+  "valid": true,
+  "findingCount": 0,
+  "errors": [],
+  "severity": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0
+  }
+}
+```
+
+**All finding fields are REQUIRED:**
+- Every finding MUST have severity line, location line, AND recommendation line
+- Missing any field = invalid finding (skip it and warn)
 
 ### Validation Output
 
