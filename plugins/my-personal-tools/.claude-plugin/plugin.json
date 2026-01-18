@@ -1,9 +1,24 @@
 {
   "name": "my-personal-tools",
   "description": "Personal productivity tools: DDD/OOP patterns, React/Next.js validation, DRY detection, code review, and git workflows with specialized agents",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "author": {
     "name": "markky21"
   },
-  "keywords": ["personal", "productivity", "skills", "agents", "ddd", "react", "nextjs", "git", "dry", "code-review", "clean-code"]
+  "keywords": ["personal", "productivity", "skills", "agents", "ddd", "react", "nextjs", "git", "dry", "code-review", "clean-code"],
+  "externalSkills": [
+    {
+      "source": "vercel-labs/agent-skills",
+      "description": "Vercel AI SDK skills for React and Next.js development",
+      "skills": "*",
+      "condition": {
+        "type": "any",
+        "rules": [
+          { "files": ["next.config.*", "next.config.ts", "next.config.js", "next.config.mjs"] },
+          { "dependencies": ["next", "react"] },
+          { "devDependencies": ["next", "react"] }
+        ]
+      }
+    }
+  ]
 }

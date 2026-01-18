@@ -9,8 +9,8 @@
   "plugins": [
     {
       "name": "my-personal-tools",
-      "description": "Personal productivity tools: DDD/OOP, React/Next.js, DRY detection, code review with specialized agents",
-      "version": "1.4.0",
+      "description": "Personal productivity tools: DDD/OOP, React/Next.js, DRY detection, code review, external skills with conditional activation",
+      "version": "1.5.0",
       "author": {
         "name": "markky21"
       },
