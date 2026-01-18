@@ -113,6 +113,35 @@ Display which validators will run:
    Max iterations: {number}
 ```
 
+#### 4a.5: Validate Validator Output Format
+
+Before launching validators, use Task tool to run fix-loop-output-validator agent on each selected validator to check format compliance:
+
+For each selected validator:
+- Launch fix-loop-output-validator agent with:
+  - Validator name
+  - Sample output or documentation (if available)
+  - Instructions to check format compliance
+
+The validator will return JSON with compliance status:
+- If valid: log "✅ {validator_name} output format compliant"
+- If invalid: log warning "⚠️ {validator_name} output may not conform to standard format"
+
+**Important:** Format validation is non-blocking:
+- Continue even if validation fails
+- Invalid validators will still run but findings may be unparseable
+- Log any format issues but do not stop the loop
+
+Example logging:
+```
+📋 Validating output format:
+   ✅ ddd-oop-validator output format compliant
+   ✅ dry-violations-detector output format compliant
+   ✅ react-nextjs-validator output format compliant
+   ⚠️ react-best-practices-validator output may not conform
+      (Will attempt to parse anyway)
+```
+
 #### 4b. Run Validators in Parallel
 
 Use Task tool to launch selected validator agents **in parallel**:
