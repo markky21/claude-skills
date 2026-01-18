@@ -298,9 +298,41 @@ Otherwise, reset `stallCount = 0`.
 ```
 ───────────────────────────────────────────────────────────────
  Found {count} issues ({breakdown by severity})
+ From validators: {comma-separated list of validators that found issues}
 ───────────────────────────────────────────────────────────────
 
-{List each finding with emoji, description, location, recommendation}
+{For each finding, display in this format:}
+
+{severity_emoji} {SEVERITY}: {description}
+   📍 {validator_name}: {file}:{line}
+   💡 {recommendation}
+
+{blank line between findings}
+
+{Example output:}
+
+───────────────────────────────────────────────────────────────
+ Found 8 issues (1 CRITICAL, 3 HIGH, 3 MEDIUM, 1 LOW)
+ From validators: ddd-oop-validator, react-nextjs-validator
+───────────────────────────────────────────────────────────────
+
+🔴 CRITICAL: Hook called conditionally inside if statement
+   📍 react-nextjs-validator: src/components/Form.tsx:42
+   💡 Move useState call outside the conditional block. Hooks must be called unconditionally on every render.
+
+🟠 HIGH: Multiple useState calls managing related state
+   📍 react-nextjs-validator: src/hooks/useFormState.ts:15
+   💡 Consider using useReducer instead of 5 related useState calls for better state management.
+
+🟠 HIGH: Anemic domain model
+   📍 ddd-oop-validator: src/domain/User.ts:8
+   💡 Add behavior methods to the User entity instead of keeping it data-only.
+
+🟡 MEDIUM: Derived state stored in component state
+   📍 react-nextjs-validator: src/components/UserProfile.tsx:28
+   💡 Calculate filteredUsers directly instead of storing in state. Use useMemo if computation is expensive.
+
+[... more findings ...]
 ```
 
 #### 4f. Apply Fixes
