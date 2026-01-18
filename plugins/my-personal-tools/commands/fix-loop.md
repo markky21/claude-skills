@@ -18,49 +18,57 @@ Iteratively validates code and fixes issues until no critical/high severity find
 
 Execute an iterative fix loop following this process:
 
-### Step 1: Parse Configuration
+### Step 1: Discover Available Validators
+
+Use Task tool to launch fix-loop-validator-discovery agent to find all available validators:
+
+```
+Pass to the agent:
+- BUILTIN_MANIFEST: plugins/my-personal-tools/validators.json
+- PLUGINS_DIR: <current project's installed plugins directory>
+- PROJECT_DIR: <current project root>
+```
+
+The discovery agent will:
+- Load built-in validators from validators.json
+- Scan external plugins for validators in plugin.json
+- Use fallback naming convention for *-validator agents
+- Return a JSON list of all discovered validators with metadata
+
+Capture the JSON output from the discovery agent and store it.
+
+### Step 2: Parse CLI Arguments & Run Configurator
 
 Check if CLI arguments were provided. Arguments format:
 ```
---validators ddd-oop,dry,clean-code
---severity critical,high,medium
+--validators ddd-oop,dry,react-best-practices
+--severity critical,high
 --iterations 5
 ```
 
-**If NO arguments provided**, use AskUserQuestion to show interactive prompts:
+**If CLI arguments provided:**
+- Parse them (split by commas, convert to proper format)
+- Skip to Step 2b (validation section)
 
-**Prompt 1 - Validators (multi-select):**
-- Header: "Validators"
-- Question: "Which validators should run in the fix loop?"
-- Options:
-  - "DDD/OOP" - Anemic models, Tell/Don't Ask, method placement
-  - "DRY" - Duplicated constants, logic, magic values
-  - "Clean Code" - Function size, naming, SOLID principles
-- Default: DDD/OOP and DRY selected
-- multiSelect: true
+**If NO CLI arguments provided:**
+- Use Task tool to launch fix-loop-configurator agent
+- Pass the discovered validators list from Step 1
+- The configurator will invoke AskUserQuestion for three interactive prompts:
+  1. Validator selection (multi-select)
+  2. Severity filter (multi-select)
+  3. Iteration count (single-select)
+- Capture the configuration JSON output
 
-**Prompt 2 - Severity (multi-select):**
-- Header: "Severity"
-- Question: "Which severity levels should trigger fixes?"
-- Options:
-  - "CRITICAL" - Must fix, blocks merge
-  - "HIGH" - Should fix, high risk
-  - "MEDIUM" - Address soon
-  - "LOW" - Nice to have
-- Default: CRITICAL and HIGH selected
-- multiSelect: true
+### Step 2b: Validate & Merge Configuration
 
-**Prompt 3 - Max Iterations:**
-- Header: "Iterations"
-- Question: "Maximum fix iterations before stopping?"
-- Options:
-  - "3" - Quick pass
-  - "5 (Recommended)" - Balanced
-  - "10" - Thorough
-- Default: 5
-- multiSelect: false
+- Extract selectedValidators array from configurator output
+- Validate that all selected validators were discovered in Step 1
+- Warn if a validator is selected but not found: "⚠️ Validator X not found during discovery, skipping"
+- Build final selectedValidators list with agent names from discovered metadata
+- Store: severity levels, maxIterations
+- Confirm configuration is ready to proceed
 
-### Step 2: Initialize Loop State
+### Step 3: Initialize Loop State
 
 Create a todo list to track the loop:
 
@@ -77,11 +85,11 @@ Initialize variables:
 - `previousIssueCount = Infinity`
 - `stallCount = 0`
 
-### Step 3: Run Iteration Loop
+### Step 4: Run Iteration Loop
 
 For each iteration until termination:
 
-#### 3a. Display Iteration Header
+#### 4a. Display Iteration Header
 
 ```
 ═══════════════════════════════════════════════════════════════
@@ -92,7 +100,20 @@ For each iteration until termination:
    Scope: {file count} files changed vs main
 ```
 
-#### 3b. Run Validators in Parallel
+#### 4a.1: Log Selected Validators
+
+Display which validators will run:
+
+```
+📋 Running validation loop with:
+   Validators: {count} selected
+     {validator name 1}
+     {validator name 2}
+   Severity: {CRITICAL, HIGH, etc.}
+   Max iterations: {number}
+```
+
+#### 4b. Run Validators in Parallel
 
 Use Task tool to launch selected validator agents **in parallel**:
 
@@ -159,7 +180,7 @@ Output findings with:
 - Recommendation: 💡 how to fix
 ```
 
-#### 3c. Filter and Count Findings
+#### 4c. Filter and Count Findings
 
 From validator outputs, extract findings matching selected severity levels.
 
@@ -171,7 +192,7 @@ Parse findings by looking for severity emoji patterns:
 
 Count: `currentIssueCount = number of matching findings`
 
-#### 3d. Check Termination Conditions
+#### 4d. Check Termination Conditions
 
 **Condition 1: Success**
 If `currentIssueCount == 0`:
@@ -205,7 +226,7 @@ If `currentIssueCount >= previousIssueCount`:
 
 Otherwise, reset `stallCount = 0`.
 
-#### 3e. Display Findings
+#### 4e. Display Findings
 
 ```
 ───────────────────────────────────────────────────────────────
@@ -215,7 +236,7 @@ Otherwise, reset `stallCount = 0`.
 {List each finding with emoji, description, location, recommendation}
 ```
 
-#### 3f. Apply Fixes
+#### 4f. Apply Fixes
 
 ```
 ───────────────────────────────────────────────────────────────
@@ -243,7 +264,7 @@ Or if skipped:
 
 Track: `totalFixed += number of fixes applied`
 
-#### 3g. Continue Loop
+#### 4g. Continue Loop
 
 ```
 → Continuing to iteration {n+1}...
@@ -256,7 +277,7 @@ Update:
 
 Go back to Step 3a.
 
-### Step 4: Generate Final Summary
+### Step 5: Generate Final Summary
 
 ```
 ═══════════════════════════════════════════════════════════════
