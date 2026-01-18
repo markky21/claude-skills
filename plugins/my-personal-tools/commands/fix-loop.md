@@ -182,15 +182,70 @@ Output findings with:
 
 #### 4c. Filter and Count Findings
 
-From validator outputs, extract findings matching selected severity levels.
+From all validator outputs, extract findings matching selected severity levels.
 
-Parse findings by looking for severity emoji patterns:
-- 🔴 = CRITICAL
-- 🟠 = HIGH
-- 🟡 = MEDIUM
-- 🟢 = LOW
+Parse findings using standardized regex patterns that work for ANY validator:
 
-Count: `currentIssueCount = number of matching findings`
+**Severity emoji + description regex:**
+```
+/(🔴|🟠|🟡|🟢)\s+([A-Z]+):\s+(.+)/
+```
+Extracts: emoji, severity level (CRITICAL/HIGH/MEDIUM/LOW), description
+
+**Location regex:**
+```
+/📍\s+(.+):(\d+)/
+```
+Extracts: file path and line number
+
+**Recommendation regex:**
+```
+/💡\s+(.+)/
+```
+Extracts: recommendation text
+
+**Processing steps:**
+
+For each validator output line:
+1. Try to match against severity regex
+2. If matches: extract emoji and map to severity level
+   - 🔴 → CRITICAL
+   - 🟠 → HIGH
+   - 🟡 → MEDIUM
+   - 🟢 → LOW
+3. Check if severity level is in selectedSeverity
+4. If yes: scan next lines for location and recommendation
+   - Look for 📍 pattern for location
+   - Look for 💡 pattern for recommendation
+5. Combine into finding object: {severity, location, description, recommendation}
+6. Add to findings list
+
+**Error handling:**
+
+If parsing fails for any line:
+```
+⚠️ WARNING: Could not parse finding from {validator_name}:
+   {line_that_failed}
+   (Skipping this finding but continuing with others)
+```
+
+Continue without stopping - prioritize fix-loop robustness.
+
+**Counting:**
+
+Count all successfully parsed findings that match selectedSeverity:
+```
+currentIssueCount = number of matching findings
+```
+
+Log the count with breakdown:
+```
+Found {currentIssueCount} issues:
+  🔴 CRITICAL: {count}
+  🟠 HIGH: {count}
+  🟡 MEDIUM: {count}
+  🟢 LOW: {count}
+```
 
 #### 4d. Check Termination Conditions
 
