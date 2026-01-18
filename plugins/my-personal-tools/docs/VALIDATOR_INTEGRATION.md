@@ -8,6 +8,12 @@ Fix-loop automatically discovers and integrates validators from:
 1. Built-in validators in my-personal-tools plugin
 2. External plugins with validators declared in plugin.json
 
+## Built-in vs. External Validators
+
+This guide focuses on **external plugins**. Built-in validators (included in my-personal-tools plugin) use the same output format but are defined in `validators.json` rather than `plugin.json`.
+
+External plugins (created by the community) declare validators in their own `plugin.json` file and follow the same integration requirements.
+
 ## Creating a Validator-Compatible Plugin
 
 ### Step 1: Declare Validators in plugin.json
@@ -69,7 +75,7 @@ Your validator MUST output findings in this exact format:
 **Critical requirements:**
 - Use severity emojis: 🔴 CRITICAL, 🟠 HIGH, 🟡 MEDIUM, 🟢 LOW
 - Include colon and space after severity: `: `
-- File path must include extension (e.g., `.ts`, `.tsx`, `.js`)
+- File path must include extension: .ts, .tsx, .js, .jsx, .py, .java, .rb, .go, .rs, or other language extensions
 - Line number required: `file:123` format
 - Each finding must have location and recommendation
 
@@ -86,6 +92,14 @@ Suggestion at src/hooks/useData.ts: Consider useReducer
 - Location not in `📍 file:line` format
 - Missing recommendation emoji and proper formatting
 
+**CRITICAL SPACING REQUIREMENTS:**
+- Severity line: exactly ONE space between emoji and severity word
+- Location line: exactly THREE spaces before 📍, exactly ONE space after 📍
+- Recommendation line: exactly THREE spaces before 💡, exactly ONE space after 💡
+- Multiple spaces, tabs, or different indentation will cause parsing failure
+
+The fix-loop-output-validator agent strictly enforces these spacing rules.
+
 ### Step 4: Test Your Validator
 
 Before publishing:
@@ -93,6 +107,24 @@ Before publishing:
 1. Run your validator manually on sample code
 2. Verify output matches the required format exactly
 3. Test with fix-loop to ensure it integrates correctly
+
+### Step 5: Validate Output Format (Optional)
+
+Before integrating with fix-loop, validate that your output format is correct. Use the fix-loop-output-validator agent:
+
+1. Extract sample output from your validator
+2. Pass it to fix-loop-output-validator for format checking
+3. Fix any format violations reported
+4. Re-run your validator and confirm output format is now valid
+
+This ensures your validator will be compatible with fix-loop parsing.
+
+Example sample output to validate:
+```
+🔴 CRITICAL: Component uses useState without proper dependency
+   📍 src/components/Widget.tsx:24
+   💡 Add missing dependencies to the useEffect dependency array
+```
 
 ### Example: React Best Practices Validator
 
@@ -170,5 +202,7 @@ Suggested categories for organization:
 
 ## Questions?
 
-For issues or questions about validator integration, refer to the fix-loop design document:
-`docs/plans/2026-01-18-fix-loop-dynamic-validators-design.md`
+For issues or questions about validator integration, you can also review:
+- The fix-loop command documentation
+- The output format specification (see Step 3 above)
+- Internal validator examples in this plugin's agents/ directory
