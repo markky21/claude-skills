@@ -113,35 +113,6 @@ Display which validators will run:
    Max iterations: {number}
 ```
 
-#### 4a.5: Validate Validator Output Format
-
-Before launching validators, use Task tool to run fix-loop-output-validator agent on each selected validator to check format compliance:
-
-For each selected validator:
-- Launch fix-loop-output-validator agent with:
-  - Validator name
-  - Sample output or documentation (if available)
-  - Instructions to check format compliance
-
-The validator will return JSON with compliance status:
-- If valid: log "✅ {validator_name} output format compliant"
-- If invalid: log warning "⚠️ {validator_name} output may not conform to standard format"
-
-**Important:** Format validation is non-blocking:
-- Continue even if validation fails
-- Invalid validators will still run but findings may be unparseable
-- Log any format issues but do not stop the loop
-
-Example logging:
-```
-📋 Validating output format:
-   ✅ ddd-oop-validator output format compliant
-   ✅ dry-violations-detector output format compliant
-   ✅ react-nextjs-validator output format compliant
-   ⚠️ react-best-practices-validator output may not conform
-      (Will attempt to parse anyway)
-```
-
 #### 4b. Run Validators in Parallel
 
 Use Task tool to launch selected validator agents **in parallel**:
@@ -207,6 +178,33 @@ Output findings with:
 - Severity: 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW
 - Location: 📍 file:line
 - Recommendation: 💡 how to fix
+```
+
+#### 4b.1: Validate & Parse Validator Output
+
+For each validator that completed:
+
+1. **Check output format compliance**
+   - Use fix-loop-output-validator agent to validate the actual output
+   - Pass the validator's complete output text
+   - Receive JSON validation result
+
+2. **Log validation result**
+   - If valid: log "✅ {validator_name}: output format valid"
+   - If invalid: log "⚠️ {validator_name}: output format non-compliant, attempting to parse anyway"
+
+3. **Proceed to parsing**
+   - Both valid and invalid outputs proceed to Step 4c for parsing
+   - Invalid outputs may have some findings skipped if unparseable
+   - Non-blocking: one validator's format issues don't stop others
+
+Example:
+```
+Validating outputs:
+  ✅ ddd-oop-validator: output format valid
+  ✅ dry-violations-detector: output format valid
+  ⚠️ react-best-practices-validator: output format non-compliant
+     (Parsing anyway - some findings may be skipped)
 ```
 
 #### 4c. Filter and Count Findings
