@@ -6,6 +6,24 @@
     "name": "markky21"
   },
   "keywords": ["personal", "productivity", "skills", "agents", "ddd", "react", "nextjs", "git", "dry", "code-review", "clean-code"],
+  "commands": [
+    {
+      "name": "commit",
+      "description": "Create a git commit with conventional commits format"
+    },
+    {
+      "name": "external-skill",
+      "description": "Manage external skills - add, list, or remove skills from other repositories"
+    },
+    {
+      "name": "fix-loop",
+      "description": "Iteratively validate and fix code issues until no critical/high findings remain"
+    },
+    {
+      "name": "review-branch",
+      "description": "Run comprehensive multi-agent code review on current branch"
+    }
+  ],
   "externalSkills": [
     {
       "source": "vercel-labs/agent-skills",
