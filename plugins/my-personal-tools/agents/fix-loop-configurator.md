@@ -91,6 +91,57 @@ External - ddd-patterns-lib [2.0.1]:
 
 **multiSelect:** false
 
+### Prompt 4: Test Generation
+
+**Header:** "Testing"
+**Question:** "Generate tests for the fixes applied?"
+
+**Options:**
+- label: "Yes - Generate tests, run them, iterate if failures (Recommended)"
+  description: "Tests validate fixes work and prevent regressions. If tests fail, fixes are iterated."
+- label: "No - Apply fixes only"
+  description: "Skip test generation, use fix-loop as before"
+
+**Default selection:** "Yes - Generate tests..."
+
+**multiSelect:** false
+
+If user selects "Yes", show advanced options:
+
+#### Prompt 4b: Test Scope (shown only if test generation enabled)
+
+**Header:** "Test Scope"
+**Question:** "What code should be tested?"
+
+**Options:**
+- label: "All new/modified code (Recommended)"
+  description: "Test every change validators made"
+- label: "Only business logic"
+  description: "Skip utilities and helpers"
+- label: "Only code validators flagged"
+  description: "Test only the changes validators specifically marked as needing testing"
+
+**Default selection:** "All new/modified code (Recommended)"
+
+**multiSelect:** false
+
+#### Prompt 4c: Test Coverage (shown only if test generation enabled)
+
+**Header:** "Coverage"
+**Question:** "What level of test coverage?"
+
+**Options:**
+- label: "Happy paths + edge cases (Recommended)"
+  description: "Standard senior-level coverage: normal flow and edge cases"
+- label: "Happy paths only"
+  description: "Test only the normal, expected behavior"
+- label: "Comprehensive"
+  description: "Include happy paths, edge cases, and error scenarios"
+
+**Default selection:** "Happy paths + edge cases (Recommended)"
+
+**multiSelect:** false
+
 ## Output Format
 
 After collecting all user selections, output a configuration summary:
@@ -113,6 +164,11 @@ After collecting all user selections, output a configuration summary:
 🎯 Severity Filter: CRITICAL, HIGH
 
 ⚡ Max Iterations: 5
+
+🧪 Test Generation:
+   Enabled: Yes
+   Scope: All changes
+   Coverage: Happy paths + edges
 
 Ready to run validation...
 ═══════════════════════════════════════════════════════════════

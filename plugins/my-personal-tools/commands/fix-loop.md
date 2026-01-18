@@ -68,6 +68,17 @@ Check if CLI arguments were provided. Arguments format:
 - Store: severity levels, maxIterations
 - Confirm configuration is ready to proceed
 
+### Step 2c: Extract Test Configuration
+
+From the configurator output (or defaults if skipped), extract:
+- `generateTests` - boolean, true if user enabled test generation
+- `testScope` - "all-changes" | "business-logic" | "flagged-code"
+- `testCoverage` - "happy-paths-edges" | "happy-paths-only" | "comprehensive"
+
+If user disabled test generation, set `generateTests = false` and skip all subsequent test steps.
+
+If test generation enabled, proceed with test steps in the loop.
+
 ### Step 3: Initialize Loop State
 
 Create a todo list to track the loop:
@@ -390,7 +401,168 @@ Or if skipped:
 
 Track: `totalFixed += number of fixes applied`
 
-#### 4g. Continue Loop
+#### 4g. Generate Tests (if enabled)
+
+If `generateTests == false`, skip to 4h.
+
+Otherwise:
+
+```
+───────────────────────────────────────────────────────────────
+ 🧪 Generating tests for fixes...
+───────────────────────────────────────────────────────────────
+```
+
+Use Task tool to launch fix-loop-test-generator agent:
+
+**Inputs:**
+- Git diff of changes (use: `git diff HEAD~{iteration}...HEAD`)
+- Validator context (from previous validator runs, what each fix was about)
+- Project patterns (detected from testing-patterns.json analysis)
+- Test scope and coverage (from configuration)
+
+**Output expected:**
+- List of test files generated
+- Count of test cases per file
+- Skipped code sections with reasons
+
+Example:
+
+```
+✅ Generated: src/domain/User.test.ts
+   📝 Tests User entity creation, email validation, domain behavior
+   📊 6 test cases covering constructor, validation, error paths
+
+✅ Generated: src/services/UserRegistrationService.test.ts
+   📝 Tests registration service with repository integration
+   📊 8 test cases covering happy path, errors, state verification
+```
+
+#### 4h. Run Generated Tests (if enabled)
+
+If `generateTests == false`, skip to 4i (continue loop).
+
+Otherwise:
+
+```
+───────────────────────────────────────────────────────────────
+ 🏃 Running tests...
+───────────────────────────────────────────────────────────────
+```
+
+Use Task tool to launch fix-loop-test-runner agent.
+
+**Inputs:**
+- Test framework type (auto-detect or from testing-patterns.json)
+- Test file patterns to run
+
+**Output expected:**
+- Test results: pass/fail count
+- Failed test names and error details
+- Stack traces if available
+
+Example output:
+
+```
+═══════════════════════════════════════════════════════════════
+ 🧪 Test Results
+═══════════════════════════════════════════════════════════════
+
+Total: 14 | ✅ Passed: 12 | ❌ Failed: 2
+
+❌ User should throw error for invalid email
+   AssertionError: expected no error to be thrown
+   📍 src/domain/User.test.ts:52
+
+❌ UserRegistrationService should reject duplicate users
+   Error: repository.save not called
+   📍 src/services/UserRegistrationService.test.ts:28
+```
+
+#### 4i. Check Test Status (if enabled)
+
+If `generateTests == false`, go to 4j.
+
+If all tests passed:
+```
+✅ All tests passed! Fixes are validated.
+```
+→ Proceed to Step 5 (Summary) - fix-loop is done
+
+If some tests failed:
+```
+❌ {n} test failures detected. Analyzing...
+```
+
+Use Task tool to launch fix-loop-failure-analyzer agent.
+
+**Inputs:**
+- Test failure output (from test runner)
+- Implementation code (files that failed tests)
+- Validator context (why original changes were made)
+- Generated test code
+
+**Output expected:**
+- For each failure: what test expected, what code did, what needs to be fixed
+- Organized by failure category
+- Implementation file references
+
+Example:
+
+```
+🔴 TEST FAILURE: User should throw error for invalid email
+   📍 src/domain/User.test.ts:52
+   ❌ Expected: Constructor to throw "Invalid email"
+   📊 Got: Constructor succeeded, created user
+   💡 Fix needed: Call validateEmail() in constructor
+   🔍 Context: DDD validator introduced validation logic
+   📄 Implementation: src/domain/User.ts:5-12
+```
+
+#### 4j. Continue Loop or Terminate
+
+Check termination conditions:
+
+**Condition 1: All tests pass**
+If all tests passed in 4i → Success, go to Step 5 (Summary)
+
+**Condition 2: Test failures with iterations remaining**
+If tests failed AND iteration < maxIterations:
+```
+→ Re-running validators with test failure context...
+```
+Pass to validators:
+- Test failure analysis from 4i
+- Implementation code that failed tests
+- Original validator context
+
+Validators will receive NEW context: tests expect X, implementation does Y, fix needed.
+
+Reset: `iteration++`, go back to 4b (Run Validators) but with failure context
+
+**Condition 3: Max iterations with failures**
+If iteration >= maxIterations AND tests still failing:
+```
+⏹️ Max iterations reached with {n} failing tests.
+```
+→ Go to Step 5 (Summary) with warning
+
+**Condition 4: Stall (no progress for 2 iterations)**
+If same tests fail identically for 2 iterations:
+```
+⚠️ No test progress for 2 iterations. Stopping.
+```
+→ Go to Step 5 (Summary)
+
+#### 4k. Continue Next Iteration
+
+If continuing to next iteration:
+- Update: `previousIssueCount` (for stall detection)
+- Update: `iteration++`
+- Mark todo completed, next marked as in_progress
+- Go back to 4a (Iteration header)
+
+#### 4l. Continue Loop
 
 ```
 → Continuing to iteration {n+1}...
@@ -401,7 +573,7 @@ Update:
 - `iteration++`
 - Mark current todo as completed, next as in_progress
 
-Go back to Step 3a.
+Go back to Step 4a.
 
 ### Step 5: Generate Final Summary
 
@@ -412,14 +584,19 @@ Go back to Step 3a.
 
 Iterations: {used}/{max}
 Issues fixed: {totalFixed}
-Remaining: {currentIssueCount}
+Remaining issues: {currentIssueCount}
 
-{If remaining == 0}
-🎉 No {severity levels} issues remaining!
+{If test generation was enabled:}
+Tests Generated: {count}
+Tests Status: {✅ All passing | ❌ {n} failing}
 
-{If remaining > 0}
+{If remaining issues > 0}
 📋 Remaining issues require manual review:
 {list remaining issues}
+
+{If test generation enabled and tests failing}
+⚠️ {n} tests still failing:
+{list failing tests}
 ```
 
 ## Validator Agent Mapping
@@ -437,3 +614,8 @@ Remaining: {currentIssueCount}
 - Scope is always **branch diff** (files changed vs main or HEAD~5)
 - Stop if no progress for 2 consecutive iterations (prevents infinite loops)
 - Be transparent: show what's being fixed before and after
+- Test generation is **optional** - can be disabled for faster iteration
+- Test-driven fixing uses the same validators, just with new context (test failures)
+- If tests fail consistently, likely indicates deeper issue requiring manual review
+- Test generation agent will skip trivial code (getters, simple pass-throughs)
+- Test output parsing tolerates some variation but warns on unparseable tests

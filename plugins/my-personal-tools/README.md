@@ -118,6 +118,41 @@ External validators that don't conform to this format will be flagged during dis
 **Before Publishing Your Validator:**
 See [VALIDATOR_INTEGRATION.md](docs/VALIDATOR_INTEGRATION.md) Step 5 for how to validate your output format using the fix-loop-output-validator agent.
 
+### Fix-Loop with Test Generation
+
+The `/fix-loop` command now includes optional test generation:
+
+- **Automatic test creation** - After validators fix code, tests are automatically generated for new/modified code
+- **Test-driven iteration** - If tests fail, validators re-analyze with test failure context and iterate
+- **Validation & regression protection** - Tests ensure fixes work correctly and prevent regressions
+
+**Using test generation:**
+
+```bash
+/fix-loop
+```
+
+When prompted, select "Yes" for test generation (default). Choose test scope and coverage level.
+
+**Disabling tests (advanced):**
+
+```bash
+/fix-loop --skip-tests
+```
+
+Tests are **enabled by default** but can be disabled for faster iteration if needed.
+
+**How it works:**
+
+1. Validators apply code quality fixes
+2. Test generator analyzes changes and creates appropriate tests
+3. Tests run - if all pass, done
+4. If tests fail, failures are analyzed and fed back to validators
+5. Validators fix implementation based on test expectations
+6. Loop continues until tests pass or max iterations reached
+
+This ensures fixes are not just "correct" by quality metrics, but actually **work** as intended.
+
 ## Directories
 
 - **skills/**: Workflow instructions and best practices

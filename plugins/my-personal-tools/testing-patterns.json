@@ -1,0 +1,69 @@
+{
+  "detectionRules": {
+    "testFramework": [
+      { "pattern": "jest.config", "type": "jest" },
+      { "pattern": "vitest.config", "type": "vitest" },
+      { "pattern": "mocha.opts", "type": "mocha" },
+      { "pattern": "package.json", "type": "auto-detect" }
+    ],
+    "testLocation": [
+      { "pattern": "__tests__/**/*.ts", "priority": 1 },
+      { "pattern": "src/**/*.test.ts", "priority": 2 },
+      { "pattern": "src/**/*.spec.ts", "priority": 3 },
+      { "pattern": "tests/**/*.ts", "priority": 4 }
+    ],
+    "testFileNaming": [
+      { "pattern": "{filename}.test.ts", "priority": 1 },
+      { "pattern": "{filename}.spec.ts", "priority": 2 },
+      { "pattern": "test-{filename}.ts", "priority": 3 }
+    ]
+  },
+  "analysisRules": {
+    "scanExistingTests": [
+      "**/__tests__/**/*.ts",
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/tests/**/*.ts"
+    ],
+    "parsePatterns": {
+      "jestDescribe": "describe\\(['\\\"](.+?)['\\\"]",
+      "jestIt": "it\\(['\\\"](.+?)['\\\"]",
+      "expect": "expect\\(",
+      "assertPatterns": ["expect(", "assert(", "should."]
+    },
+    "extractFrom": [
+      "test naming conventions",
+      "assertion patterns and styles",
+      "fixture and mock setup",
+      "test data builders/factories",
+      "import patterns",
+      "describe block organization"
+    ]
+  },
+  "codeQualityHeuristics": {
+    "whatToTest": [
+      "Business logic and calculations",
+      "Data validation and edge cases",
+      "Error handling and exceptions",
+      "Integration with dependencies",
+      "State changes and side effects",
+      "Domain model behavior"
+    ],
+    "whatToSkip": [
+      "Simple getters/setters",
+      "Pass-through functions",
+      "Trivial assignments",
+      "Library re-exports",
+      "Implementation details that change frequently"
+    ],
+    "bestPractices": [
+      "Use AAA pattern: Arrange, Act, Assert",
+      "One logical concept per test",
+      "Meaningful test names that describe behavior",
+      "Mock external dependencies",
+      "Use realistic test data",
+      "Test both happy paths and error cases",
+      "Include comments explaining why, not what"
+    ]
+  }
+}
