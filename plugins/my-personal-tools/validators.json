@@ -1,0 +1,32 @@
+{
+  "validators": [
+    {
+      "agentName": "ddd-oop-validator",
+      "displayName": "DDD/OOP Validator",
+      "description": "Validates Domain-Driven Design and OOP compliance - detects anemic models, Tell/Don't Ask violations, method placement issues",
+      "category": "architecture",
+      "version": "1.0.0"
+    },
+    {
+      "agentName": "dry-violations-detector",
+      "displayName": "DRY Violations Detector",
+      "description": "Finds duplicated code, constants, magic values, and repeated logic patterns that violate DRY principles",
+      "category": "dry",
+      "version": "1.0.0"
+    },
+    {
+      "agentName": "clean-code-validator",
+      "displayName": "Clean Code Validator",
+      "description": "Validates naming conventions, function size, SOLID principles, and identifies code smells",
+      "category": "cleancode",
+      "version": "1.0.0"
+    },
+    {
+      "agentName": "react-nextjs-validator",
+      "displayName": "React/Next.js Validator",
+      "description": "Validates React 19+ and Next.js 15+ patterns - hook usage, Server/Client components, performance optimizations",
+      "category": "react",
+      "version": "1.0.0"
+    }
+  ]
+}
