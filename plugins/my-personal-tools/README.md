@@ -45,6 +45,60 @@ Please use the dry-violations-detector agent to scan for duplications in this br
 
 The `/review-branch` command orchestrates all agents in parallel for comprehensive review.
 
+## Fix-Loop Validator System
+
+The `/fix-loop` command now supports dynamic validator discovery from built-in and external plugins.
+
+**Built-in Validators:**
+- `ddd-oop-validator` - Domain-Driven Design compliance
+- `dry-violations-detector` - Code duplication and DRY violations
+- `clean-code-validator` - Code quality and naming
+- `react-nextjs-validator` - React 19+ and Next.js 15+ patterns
+
+**External Plugin Integration:**
+
+To add validators from external plugins, declare them in your plugin's `plugin.json`:
+
+```json
+{
+  "name": "my-plugin",
+  "validators": [
+    {
+      "agentName": "my-validator",
+      "displayName": "My Validator",
+      "description": "Validates specific patterns",
+      "category": "custom"
+    }
+  ]
+}
+```
+
+See [VALIDATOR_INTEGRATION.md](docs/VALIDATOR_INTEGRATION.md) for complete guide.
+
+**Using Fix-Loop:**
+
+```bash
+/fix-loop
+```
+
+The command will:
+1. Discover all available validators (built-in + external)
+2. Show interactive configurator to select validators
+3. Run iterative validation and fixing
+4. Report results with validator attribution
+
+**Validator Output Format:**
+
+All validators must output findings in this standard format:
+
+```
+🔴 CRITICAL: [issue description]
+   📍 file/path.ts:42
+   💡 [fix recommendation]
+```
+
+External validators that don't conform to this format will be flagged during discovery.
+
 ## Directories
 
 - **skills/**: Workflow instructions and best practices
