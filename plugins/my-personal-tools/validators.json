@@ -27,6 +27,13 @@
       "description": "Validates React 19+ and Next.js 15+ patterns - hook usage, Server/Client components, performance optimizations",
       "category": "react",
       "version": "1.0.0"
+    },
+    {
+      "agentName": "web-design-guidelines-validator",
+      "displayName": "Web Design Guidelines Validator",
+      "description": "Validates UI code for accessibility, UX patterns, WCAG compliance - detects missing ARIA, poor contrast, inaccessible forms",
+      "category": "accessibility",
+      "version": "1.0.0"
     }
   ]
 }

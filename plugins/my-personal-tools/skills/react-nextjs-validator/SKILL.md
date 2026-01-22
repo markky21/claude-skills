@@ -11,6 +11,8 @@ Comprehensive validator for React 19+ and Next.js 15+ best practices. Use this s
 
 **Core principle:** Prefer Server Components, extract logic to custom hooks, memoize intentionally (not everywhere), and let React Compiler handle optimizations when available.
 
+**External reference:** For Vercel's detailed performance rules (45 rules in 8 categories), see the `vercel-react-best-practices` skill. That skill provides prioritized rules for: eliminating waterfalls (async-*), bundle optimization (bundle-*), server-side performance (server-*), client-side fetching (client-*), re-render optimization (rerender-*), rendering performance (rendering-*), JavaScript patterns (js-*), and advanced patterns (advanced-*).
+
 ## When to Use
 
 ```dot
