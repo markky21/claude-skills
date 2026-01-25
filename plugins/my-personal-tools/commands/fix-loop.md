@@ -132,10 +132,17 @@ Use Task tool to launch selected validator agents **in parallel**:
 ```
 Validate the branch diff for DDD/OOP compliance.
 
-Files to check:
+**CRITICAL SCOPE CONSTRAINT:**
+- ONLY report findings on lines that appear in the git diff (lines starting with `+`)
+- If an issue exists in a file but the code was NOT modified in this branch, do NOT report it
+- The goal is to validate the CHANGES, not the entire codebase
+- Before reporting any finding, verify the problematic code appears in the diff
+
+Changed files:
 {list of changed files}
 
-Use: git diff main...HEAD (or HEAD~5 if no main)
+Git diff to analyze:
+{paste actual git diff main...HEAD output here}
 
 Check for:
 - Anemic domain models (data without behavior)
@@ -153,10 +160,17 @@ Output findings with:
 ```
 Validate the branch diff for DRY violations.
 
-Files to check:
+**CRITICAL SCOPE CONSTRAINT:**
+- ONLY report findings on lines that appear in the git diff (lines starting with `+`)
+- If an issue exists in a file but the code was NOT modified in this branch, do NOT report it
+- The goal is to validate the CHANGES, not the entire codebase
+- Before reporting any finding, verify the problematic code appears in the diff
+
+Changed files:
 {list of changed files}
 
-Use: git diff main...HEAD (or HEAD~5 if no main)
+Git diff to analyze:
+{paste actual git diff main...HEAD output here}
 
 Check for:
 - Duplicated constants/enums
@@ -174,10 +188,17 @@ Output findings with:
 ```
 Validate the branch diff for clean code principles.
 
-Files to check:
+**CRITICAL SCOPE CONSTRAINT:**
+- ONLY report findings on lines that appear in the git diff (lines starting with `+`)
+- If an issue exists in a file but the code was NOT modified in this branch, do NOT report it
+- The goal is to validate the CHANGES, not the entire codebase
+- Before reporting any finding, verify the problematic code appears in the diff
+
+Changed files:
 {list of changed files}
 
-Use: git diff main...HEAD (or HEAD~5 if no main)
+Git diff to analyze:
+{paste actual git diff main...HEAD output here}
 
 Check for:
 - Long functions (>20 lines)

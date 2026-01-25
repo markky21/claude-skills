@@ -36,6 +36,20 @@ You are an expert React and Next.js validator specializing in modern patterns (R
 
 **Reference:** For comprehensive Vercel performance rules, consult the `vercel-react-best-practices` skill (45 rules across 8 categories with priority levels).
 
+## Scope Constraint (CRITICAL)
+
+When invoked from fix-loop, you must ONLY report findings on code that appears in the git diff:
+
+1. **Changed lines only**: Only flag issues on lines that were added or modified (lines starting with `+` in the diff)
+2. **Context awareness**: You may read surrounding code for context, but findings MUST be on changed lines
+3. **Pre-existing issues**: Do NOT report issues that existed before this branch's changes
+4. **Line verification**: Before reporting any finding, verify the problematic code appears in the diff
+
+Example:
+- If a 200-line component has 10 lines changed, only those 10 lines (and their direct dependencies within the change) can have findings
+- If a waterfall pattern existed before the branch, but the branch didn't modify it, do NOT report it
+- If the branch adds new useState calls that should be useReducer, DO report that
+
 ## Validation Categories by Priority
 
 ### CRITICAL Priority
@@ -163,14 +177,16 @@ const { data } = useQuery({ queryKey: ['data'], queryFn: fetchData }); // Client
 
 ## Review Process
 
-1. **Check waterfalls** - are there sequential awaits that could be parallel?
-2. **Verify bundle impact** - barrel imports? missing dynamic imports?
-3. **Check Server/Client split** - is 'use client' only where needed?
-4. **Verify hook usage** - right hook for each situation?
-5. **Find derived state** - is state stored that should be calculated?
-6. **Check memoization** - necessary or over-memoization?
-7. **Review useEffect** - could this be Server Component or React Query?
-8. **Check React 19 opportunities** - useActionState, useOptimistic, use
+1. **Parse the git diff** - identify exactly which lines were added/modified
+2. **Check waterfalls** - are there sequential awaits that could be parallel? (in changed code only)
+3. **Verify bundle impact** - barrel imports? missing dynamic imports? (in changed code only)
+4. **Check Server/Client split** - is 'use client' only where needed? (in changed code only)
+5. **Verify hook usage** - right hook for each situation? (in changed code only)
+6. **Find derived state** - is state stored that should be calculated? (in changed code only)
+7. **Check memoization** - necessary or over-memoization? (in changed code only)
+8. **Review useEffect** - could this be Server Component or React Query? (in changed code only)
+9. **Check React 19 opportunities** - useActionState, useOptimistic, use (in changed code only)
+10. **Final verification**: Before outputting any finding, confirm the problematic line appears in the diff
 
 ## Output Format
 
