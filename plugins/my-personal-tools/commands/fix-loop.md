@@ -18,26 +18,7 @@ Iteratively validates code and fixes issues until no critical/high severity find
 
 Execute an iterative fix loop following this process:
 
-### Step 1: Discover Available Validators
-
-Use Task tool to launch fix-loop-validator-discovery agent to find all available validators:
-
-```
-Pass to the agent:
-- BUILTIN_MANIFEST: plugins/my-personal-tools/validators.json
-- PLUGINS_DIR: <current project's installed plugins directory>
-- PROJECT_DIR: <current project root>
-```
-
-The discovery agent will:
-- Load built-in validators from validators.json
-- Scan external plugins for validators in plugin.json
-- Use fallback naming convention for *-validator agents
-- Return a JSON list of all discovered validators with metadata
-
-Capture the JSON output from the discovery agent and store it.
-
-### Step 2: Parse CLI Arguments & Run Configurator
+### Step 1: Check CLI Arguments or Run Initial Configuration
 
 Check if CLI arguments were provided. Arguments format:
 ```
@@ -51,12 +32,53 @@ Check if CLI arguments were provided. Arguments format:
 - Skip to Step 2b (validation section)
 
 **If NO CLI arguments provided:**
-- Use Task tool to launch fix-loop-configurator agent
-- Pass the discovered validators list from Step 1
-- The configurator will invoke AskUserQuestion for three interactive prompts:
+- Use Task tool to launch fix-loop-configurator agent with **Prompt 0 only**
+- Prompt: "Show Prompt 0 only to ask the user about external validator discovery."
+- The configurator will ask: "Search for external validator plugins?"
+- Capture the response: `{"scanExternalPlugins": true|false}`
+
+### Step 1b: Conditional Validator Discovery
+
+Based on user's Prompt 0 response:
+
+**If `scanExternalPlugins: true`:**
+- Use Task tool to launch fix-loop-validator-discovery agent to find all available validators:
+  ```
+  Pass to the agent:
+  - BUILTIN_MANIFEST: plugins/my-personal-tools/validators.json
+  - PLUGINS_DIR: <current project's installed plugins directory>
+  - PROJECT_DIR: <current project root>
+  ```
+- The discovery agent will:
+  - Load built-in validators from validators.json
+  - Scan external plugins for validators in plugin.json
+  - Use fallback naming convention for *-validator agents
+  - Return a JSON list of all discovered validators with metadata
+- Capture the JSON output from the discovery agent and store it
+- Continue to Step 2 with all discovered validators
+
+**If `scanExternalPlugins: false` (default):**
+- Skip validator-discovery agent entirely (faster startup)
+- Use built-in validators only from validators.json:
+  - ddd-oop-validator
+  - dry-violations-detector
+  - clean-code-validator
+  - react-nextjs-validator
+  - web-design-guidelines-validator
+- Continue to Step 2 with built-in validators only
+
+### Step 2: Run Full Configurator
+
+Use Task tool to launch fix-loop-configurator agent with the validators list:
+
+- Pass the validators list (either all discovered or built-in only)
+- Pass `scanExternalPlugins` flag so configurator knows which mode
+- Prompt: "Show Prompts 1-4 for validator selection and options. Validators: {validators list}. scanExternalPlugins: {true|false}"
+- The configurator will invoke AskUserQuestion for remaining prompts:
   1. Validator selection (multi-select)
   2. Severity filter (multi-select)
   3. Iteration count (single-select)
+  4. Test generation options
 - Capture the configuration JSON output
 
 ### Step 2b: Validate & Merge Configuration
