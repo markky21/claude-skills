@@ -117,6 +117,8 @@ Initialize variables:
 - `totalFixed = 0`
 - `previousIssueCount = Infinity`
 - `stallCount = 0`
+- `cleanLoopCount = 0` - tracks consecutive clean passes
+- `confirmationLoops` - number of clean passes required (default: 1, from config)
 
 ### Step 4: Run Iteration Loop
 
@@ -342,14 +344,31 @@ Found {currentIssueCount} issues:
 
 #### 4d. Check Termination Conditions
 
-**Condition 1: Success**
+**Condition 1: Clean Pass Detected**
 If `currentIssueCount == 0`:
-```
-───────────────────────────────────────────────────────────────
- ✅ No {severity levels} issues found!
-───────────────────────────────────────────────────────────────
-```
-→ Go to Step 4 (Summary)
+  `cleanLoopCount++`
+
+  If `cleanLoopCount >= confirmationLoops`:
+    ```
+    ───────────────────────────────────────────────────────────────
+     ✅ No {severity levels} issues found!
+        Confirmed with {cleanLoopCount} consecutive clean pass(es).
+    ───────────────────────────────────────────────────────────────
+    ```
+    → Go to Step 5 (Summary)
+
+  Else:
+    ```
+    ───────────────────────────────────────────────────────────────
+     ✅ Clean pass {cleanLoopCount}/{confirmationLoops}
+        Continuing for confirmation...
+    ───────────────────────────────────────────────────────────────
+    ```
+    → Continue to next iteration (Step 4k)
+
+**Reset clean loop count:**
+If `currentIssueCount > 0`:
+  `cleanLoopCount = 0`
 
 **Condition 2: Max Iterations**
 If `iteration >= maxIterations`:
@@ -626,6 +645,7 @@ Go back to Step 4a.
 ═══════════════════════════════════════════════════════════════
 
 Iterations: {used}/{max}
+Confirmation: {cleanLoopCount}/{confirmationLoops} clean passes
 Issues fixed: {totalFixed}
 Remaining issues: {currentIssueCount}
 

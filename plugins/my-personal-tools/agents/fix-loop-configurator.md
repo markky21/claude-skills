@@ -136,6 +136,23 @@ External - ddd-patterns-lib [2.0.1]:
 
 **multiSelect:** false
 
+### Prompt 3b: Confirmation Loops
+
+**Header:** "Confirmation"
+**Question:** "How many consecutive clean loops to confirm no issues?"
+
+**Options:**
+- label: "1 - Stop on first clean pass (Recommended)"
+  description: "Standard behavior - stop as soon as no issues are found"
+- label: "2 - Require 2 consecutive clean passes"
+  description: "Extra confirmation - validates fixes are stable"
+- label: "3 - Require 3 consecutive clean passes"
+  description: "Maximum confidence - thorough re-validation"
+
+**Default selection:** "1 - Stop on first clean pass (Recommended)"
+
+**multiSelect:** false
+
 ### Prompt 4: Test Generation
 
 **Header:** "Testing"
@@ -210,6 +227,8 @@ After collecting all user selections, output a configuration summary:
 
 ⚡ Max Iterations: 5
 
+🔁 Confirmation Loops: 2 (requires 2 consecutive clean passes)
+
 🧪 Test Generation:
    Enabled: Yes
    Scope: All changes
@@ -231,7 +250,8 @@ Then output the configuration as JSON for the fix-loop command to parse:
     "react-nextjs-validator"
   ],
   "severity": ["CRITICAL", "HIGH"],
-  "maxIterations": 5
+  "maxIterations": 5,
+  "confirmationLoops": 1
 }
 ```
 
