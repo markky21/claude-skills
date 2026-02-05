@@ -22,10 +22,12 @@ Execute an iterative fix loop following this process:
 
 Check if CLI arguments were provided. Arguments format:
 ```
---validators ddd-oop,dry,react-best-practices
+--validators ddd,dry,clean,react,web
 --severity critical,high
 --iterations 5
 ```
+
+Use short codes from the Validator Agent Mapping table below.
 
 **If CLI arguments provided:**
 - Parse them (split by commas, convert to proper format)
@@ -118,7 +120,7 @@ Initialize variables:
 - `previousIssueCount = Infinity`
 - `stallCount = 0`
 - `cleanLoopCount = 0` - tracks consecutive clean passes
-- `confirmationLoops` - number of clean passes required (default: 1, from config)
+- `confirmationLoops` - number of clean passes required (default: 2, from config)
 
 ### Step 4: Run Iteration Loop
 
@@ -664,11 +666,22 @@ Tests Status: {✅ All passing | ❌ {n} failing}
 
 ## Validator Agent Mapping
 
-| Selection | Agent (subagent_type) |
-|-----------|----------------------|
-| DDD/OOP | ddd-oop-validator |
-| DRY | dry-violations-detector |
-| Clean Code | clean-code-validator |
+| CLI Short Code | Agent (subagent_type) |
+|----------------|----------------------|
+| `ddd` | ddd-oop-validator |
+| `dry` | dry-violations-detector |
+| `clean` | clean-code-validator |
+| `react` | react-nextjs-validator |
+| `web` | web-design-guidelines-validator |
+
+## Severity Mapping
+
+| CLI Code | Internal |
+|----------|----------|
+| `critical` | CRITICAL |
+| `high` | HIGH |
+| `medium` | MEDIUM |
+| `low` | LOW |
 
 ## Important Notes
 
