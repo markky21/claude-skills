@@ -55,6 +55,34 @@
       "description": "Validates React/Next.js performance - async patterns, bundle optimization, server/client patterns, re-render optimization, hydration",
       "category": "react",
       "version": "1.0.0"
+    },
+    {
+      "agentName": "api-design-principles-validator",
+      "displayName": "API Design Principles Validator",
+      "description": "Validates REST and GraphQL API design - resource naming, HTTP methods, pagination, error handling, versioning, DataLoaders",
+      "category": "api",
+      "version": "1.0.0"
+    },
+    {
+      "agentName": "database-schema-designer-validator",
+      "displayName": "Database Schema Designer Validator",
+      "description": "Validates database schema design - normalization, constraints, indexes, data types, foreign keys, migrations",
+      "category": "database",
+      "version": "1.0.0"
+    },
+    {
+      "agentName": "next-best-practices-validator",
+      "displayName": "Next.js Best Practices Validator",
+      "description": "Validates Next.js patterns - file conventions, RSC boundaries, async APIs, metadata, error handling, route handlers",
+      "category": "nextjs",
+      "version": "1.0.0"
+    },
+    {
+      "agentName": "vue-best-practices-validator",
+      "displayName": "Vue Best Practices Validator",
+      "description": "Validates Vue 3 patterns - Composition API, reactivity, computed, watchers, props, TypeScript, performance",
+      "category": "vue",
+      "version": "1.0.0"
     }
   ]
 }
