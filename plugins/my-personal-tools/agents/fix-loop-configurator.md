@@ -81,42 +81,37 @@ Build the question dynamically from provided validators:
 **Options structure:**
 
 **If called with built-in validators only (scanExternalPlugins: false):**
-Show only built-in validators:
+Show ALL built-in validators from validators.json:
 
 Built-in [my-personal-tools]:
-- label: "DDD/OOP Validator (architecture)"
-  description: "Validates Domain-Driven Design and OOP compliance"
+- label: "DDD/OOP Validator (ddd)"
+  description: "Domain-Driven Design and OOP compliance - anemic models, Tell/Don't Ask violations"
 - label: "DRY Violations Detector (dry)"
-  description: "Finds duplicated code, constants, and magic values"
-- label: "Clean Code Validator (cleancode)"
-  description: "Validates naming conventions and code structure"
+  description: "Duplicated code, constants, magic values, repeated patterns"
+- label: "Clean Code Validator (clean)"
+  description: "Naming conventions, function size, SOLID principles, code smells"
 - label: "React/Next.js Validator (react)"
-  description: "Validates React 19+ and Next.js 15+ patterns"
-- label: "Web Design Guidelines Validator (web-design)"
-  description: "Validates web design patterns and accessibility"
+  description: "React 19+ and Next.js 15+ patterns, hooks, Server/Client components"
+- label: "Web Design Guidelines Validator (web)"
+  description: "Accessibility, UX patterns, WCAG compliance, ARIA labels"
+- label: "Tailwind Design System Validator (tailwind)"
+  description: "Tailwind CSS v4 patterns, @theme, design tokens, CVA components"
+- label: "UI/UX Pro Max Validator (uiux)"
+  description: "UI/UX best practices - accessibility, icons, interactions, contrast"
+- label: "Vercel React Best Practices Validator (vercel)"
+  description: "React/Next.js performance - async patterns, bundle optimization, hydration"
+- label: "API Design Principles Validator (api)"
+  description: "REST and GraphQL API design - resource naming, HTTP methods, pagination"
+- label: "Database Schema Designer Validator (db)"
+  description: "Database schema design - normalization, constraints, indexes, migrations"
+- label: "Next.js Best Practices Validator (next)"
+  description: "Next.js patterns - file conventions, RSC boundaries, async APIs, metadata"
+- label: "Vue Best Practices Validator (vue)"
+  description: "Vue 3 patterns - Composition API, reactivity, computed, watchers, TypeScript"
 
 **If called with all discovered validators (scanExternalPlugins: true):**
-Group validators by source (built-in first, then external plugins):
-
-Built-in [my-personal-tools]:
-- label: "DDD/OOP Validator (architecture)"
-  description: "Validates Domain-Driven Design and OOP compliance"
-- label: "DRY Violations Detector (dry)"
-  description: "Finds duplicated code, constants, and magic values"
-- label: "Clean Code Validator (cleancode)"
-  description: "Validates naming conventions and code structure"
-- label: "React/Next.js Validator (react)"
-  description: "Validates React 19+ and Next.js 15+ patterns"
-- label: "Web Design Guidelines Validator (web-design)"
-  description: "Validates web design patterns and accessibility"
-
-External - react-best-practices [1.2.0]:
-- label: "React Best Practices Validator (react)"
-  description: "Validates React patterns and best practices"
-
-External - ddd-patterns-lib [2.0.1]:
-- label: "Advanced DDD Patterns Validator (architecture)"
-  description: "Validates advanced DDD patterns and bounded contexts"
+Show ALL built-in validators (same as above) PLUS any external validators discovered.
+Group by source (built-in first, then external plugins).
 
 **Default selection:**
 - All built-in validators checked
@@ -285,6 +280,13 @@ Generate the CLI hint dynamically based on user selections:
 - `clean-code-validator` → `clean`
 - `react-nextjs-validator` → `react`
 - `web-design-guidelines-validator` → `web`
+- `tailwind-design-system-validator` → `tailwind`
+- `ui-ux-pro-max-validator` → `uiux`
+- `vercel-react-best-practices-validator` → `vercel`
+- `api-design-principles-validator` → `api`
+- `database-schema-designer-validator` → `db`
+- `next-best-practices-validator` → `next`
+- `vue-best-practices-validator` → `vue`
 
 **Severity short codes:**
 - `CRITICAL` → `critical`

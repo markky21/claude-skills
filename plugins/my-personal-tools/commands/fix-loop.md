@@ -673,6 +673,13 @@ Tests Status: {✅ All passing | ❌ {n} failing}
 | `clean` | clean-code-validator |
 | `react` | react-nextjs-validator |
 | `web` | web-design-guidelines-validator |
+| `tailwind` | tailwind-design-system-validator |
+| `uiux` | ui-ux-pro-max-validator |
+| `vercel` | vercel-react-best-practices-validator |
+| `api` | api-design-principles-validator |
+| `db` | database-schema-designer-validator |
+| `next` | next-best-practices-validator |
+| `vue` | vue-best-practices-validator |
 
 ## Severity Mapping
 
