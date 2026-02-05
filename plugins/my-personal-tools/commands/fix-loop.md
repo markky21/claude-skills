@@ -34,7 +34,7 @@ Use short codes from the Validator Agent Mapping table below.
 - Skip to Step 2b (validation section)
 
 **If NO CLI arguments provided:**
-- Use Task tool to launch fix-loop-configurator agent with **Prompt 0 only**
+- Use Task tool to launch `my-personal-tools:fix-loop-configurator` agent with **Prompt 0 only**
 - Prompt: "Show Prompt 0 only to ask the user about external validator discovery."
 - The configurator will ask: "Search for external validator plugins?"
 - Capture the response: `{"scanExternalPlugins": true|false}`
@@ -44,7 +44,7 @@ Use short codes from the Validator Agent Mapping table below.
 Based on user's Prompt 0 response:
 
 **If `scanExternalPlugins: true`:**
-- Use Task tool to launch fix-loop-validator-discovery agent to find all available validators:
+- Use Task tool to launch `my-personal-tools:fix-loop-validator-discovery` agent to find all available validators:
   ```
   Pass to the agent:
   - BUILTIN_MANIFEST: plugins/my-personal-tools/validators.json
@@ -62,16 +62,16 @@ Based on user's Prompt 0 response:
 **If `scanExternalPlugins: false` (default):**
 - Skip validator-discovery agent entirely (faster startup)
 - Use built-in validators only from validators.json:
-  - ddd-oop-validator
-  - dry-violations-detector
-  - clean-code-validator
-  - react-nextjs-validator
-  - web-design-guidelines-validator
+  - my-personal-tools:ddd-oop-validator
+  - my-personal-tools:dry-violations-detector
+  - my-personal-tools:clean-code-validator
+  - my-personal-tools:react-nextjs-validator
+  - my-personal-tools:web-design-guidelines-validator
 - Continue to Step 2 with built-in validators only
 
 ### Step 2: Run Full Configurator
 
-Use Task tool to launch fix-loop-configurator agent with the validators list:
+Use Task tool to launch `my-personal-tools:fix-loop-configurator` agent with the validators list:
 
 - Pass the validators list (either all discovered or built-in only)
 - Pass `scanExternalPlugins` flag so configurator knows which mode
@@ -243,7 +243,7 @@ Output findings with:
 For each validator that completed:
 
 1. **Check output format compliance**
-   - Use fix-loop-output-validator agent to validate the actual output
+   - Use `my-personal-tools:fix-loop-output-validator` agent to validate the actual output
    - Pass the validator's complete output text
    - Receive JSON validation result
 
@@ -445,7 +445,7 @@ Otherwise, reset `stallCount = 0`.
 ───────────────────────────────────────────────────────────────
 ```
 
-Use Task tool to launch fix-loop-fixer agent:
+Use Task tool to launch `my-personal-tools:fix-loop-fixer` agent:
 
 ```
 Apply fixes for the following validation findings:
@@ -477,7 +477,7 @@ Otherwise:
 ───────────────────────────────────────────────────────────────
 ```
 
-Use Task tool to launch fix-loop-test-generator agent:
+Use Task tool to launch `my-personal-tools:fix-loop-test-generator` agent:
 
 **Inputs:**
 - Git diff of changes (use: `git diff HEAD~{iteration}...HEAD`)
@@ -514,7 +514,7 @@ Otherwise:
 ───────────────────────────────────────────────────────────────
 ```
 
-Use Task tool to launch fix-loop-test-runner agent.
+Use Task tool to launch `my-personal-tools:fix-loop-test-runner` agent.
 
 **Inputs:**
 - Test framework type (auto-detect or from testing-patterns.json)
@@ -558,7 +558,7 @@ If some tests failed:
 ❌ {n} test failures detected. Analyzing...
 ```
 
-Use Task tool to launch fix-loop-failure-analyzer agent.
+Use Task tool to launch `my-personal-tools:fix-loop-failure-analyzer` agent.
 
 **Inputs:**
 - Test failure output (from test runner)
@@ -668,18 +668,18 @@ Tests Status: {✅ All passing | ❌ {n} failing}
 
 | CLI Short Code | Agent (subagent_type) |
 |----------------|----------------------|
-| `ddd` | ddd-oop-validator |
-| `dry` | dry-violations-detector |
-| `clean` | clean-code-validator |
-| `react` | react-nextjs-validator |
-| `web` | web-design-guidelines-validator |
-| `tailwind` | tailwind-design-system-validator |
-| `uiux` | ui-ux-pro-max-validator |
-| `vercel` | vercel-react-best-practices-validator |
-| `api` | api-design-principles-validator |
-| `db` | database-schema-designer-validator |
-| `next` | next-best-practices-validator |
-| `vue` | vue-best-practices-validator |
+| `ddd` | my-personal-tools:ddd-oop-validator |
+| `dry` | my-personal-tools:dry-violations-detector |
+| `clean` | my-personal-tools:clean-code-validator |
+| `react` | my-personal-tools:react-nextjs-validator |
+| `web` | my-personal-tools:web-design-guidelines-validator |
+| `tailwind` | my-personal-tools:tailwind-design-system-validator |
+| `uiux` | my-personal-tools:ui-ux-pro-max-validator |
+| `vercel` | my-personal-tools:vercel-react-best-practices-validator |
+| `api` | my-personal-tools:api-design-principles-validator |
+| `db` | my-personal-tools:database-schema-designer-validator |
+| `next` | my-personal-tools:next-best-practices-validator |
+| `vue` | my-personal-tools:vue-best-practices-validator |
 
 ## Severity Mapping
 
@@ -693,7 +693,7 @@ Tests Status: {✅ All passing | ❌ {n} failing}
 ## Important Notes
 
 - Always run validators in **parallel** using multiple Task tool calls
-- The fixer agent is: `fix-loop-fixer`
+- The fixer agent is: `my-personal-tools:fix-loop-fixer`
 - Scope is always **branch diff** (files changed vs main or HEAD~5)
 - Stop if no progress for 2 consecutive iterations (prevents infinite loops)
 - Be transparent: show what's being fixed before and after
