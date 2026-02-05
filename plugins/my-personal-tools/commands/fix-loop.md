@@ -7,6 +7,16 @@ allowed-tools: Bash(git *), Task, AskUserQuestion, TodoWrite, Read, Edit, Glob, 
 
 Iteratively validates code and fixes issues until no critical/high severity findings remain (inspired by the [Ralph Wiggum technique](https://awesomeclaude.ai/ralph-wiggum)).
 
+## Step 0: Display Version Banner
+
+**ALWAYS display this banner first, before anything else:**
+
+```
+═══════════════════════════════════════════════════════════════
+ 🔄 Fix Loop v1.12.0 (my-personal-tools plugin)
+═══════════════════════════════════════════════════════════════
+```
+
 ## Context
 
 - Current branch: !`git branch --show-current`
@@ -18,7 +28,7 @@ Iteratively validates code and fixes issues until no critical/high severity find
 
 Execute an iterative fix loop following this process:
 
-### Step 1: Check CLI Arguments or Run Initial Configuration
+### Step 1: Check CLI Arguments or Run Interactive Configuration
 
 Check if CLI arguments were provided. Arguments format:
 ```
@@ -34,54 +44,119 @@ Use short codes from the Validator Agent Mapping table below.
 - Skip to Step 2b (validation section)
 
 **If NO CLI arguments provided:**
-- Use Task tool to launch `my-personal-tools:fix-loop-configurator` agent with **Prompt 0 only**
-- Prompt: "Show Prompt 0 only to ask the user about external validator discovery."
-- The configurator will ask: "Search for external validator plugins?"
-- Capture the response: `{"scanExternalPlugins": true|false}`
+- Run interactive configuration directly using AskUserQuestion (NOT via subagent)
+- Follow the prompts in Step 1a through Step 1e below
 
-### Step 1b: Conditional Validator Discovery
+### Step 1a: Validator Group Selection (Architecture)
 
-Based on user's Prompt 0 response:
+Use AskUserQuestion directly with these parameters:
 
-**If `scanExternalPlugins: true`:**
-- Use Task tool to launch `my-personal-tools:fix-loop-validator-discovery` agent to find all available validators:
-  ```
-  Pass to the agent:
-  - BUILTIN_MANIFEST: plugins/my-personal-tools/validators.json
-  - PLUGINS_DIR: <current project's installed plugins directory>
-  - PROJECT_DIR: <current project root>
-  ```
-- The discovery agent will:
-  - Load built-in validators from validators.json
-  - Scan external plugins for validators in plugin.json
-  - Use fallback naming convention for *-validator agents
-  - Return a JSON list of all discovered validators with metadata
-- Capture the JSON output from the discovery agent and store it
-- Continue to Step 2 with all discovered validators
+**Question:** "Which architecture validators should run?"
+**Header:** "Architecture"
+**multiSelect:** true
+**Options:**
+- label: "DDD/OOP (ddd) (Recommended)"
+  description: "Domain-Driven Design, anemic models, Tell/Don't Ask"
+- label: "DRY Violations (dry) (Recommended)"
+  description: "Duplicated code, magic values, repeated patterns"
+- label: "Clean Code (clean)"
+  description: "Function size, naming, SOLID principles"
+- label: "API Design (api)"
+  description: "REST/GraphQL patterns, resource naming, pagination"
 
-**If `scanExternalPlugins: false` (default):**
-- Skip validator-discovery agent entirely (faster startup)
-- Use built-in validators only from validators.json:
-  - my-personal-tools:ddd-oop-validator
-  - my-personal-tools:dry-violations-detector
-  - my-personal-tools:clean-code-validator
-  - my-personal-tools:react-nextjs-validator
-  - my-personal-tools:web-design-guidelines-validator
-- Continue to Step 2 with built-in validators only
+### Step 1b: Validator Group Selection (Frontend)
 
-### Step 2: Run Full Configurator
+Use AskUserQuestion directly:
 
-Use Task tool to launch `my-personal-tools:fix-loop-configurator` agent with the validators list:
+**Question:** "Which frontend validators should run?"
+**Header:** "Frontend"
+**multiSelect:** true
+**Options:**
+- label: "React/Next.js (react)"
+  description: "React 19+ and Next.js 15+ patterns, hooks"
+- label: "Next.js Best Practices (next)"
+  description: "RSC boundaries, async APIs, file conventions"
+- label: "Vercel Performance (vercel)"
+  description: "Async patterns, bundle optimization, hydration"
+- label: "Vue.js (vue)"
+  description: "Composition API, reactivity, computed, watchers"
 
-- Pass the validators list (either all discovered or built-in only)
-- Pass `scanExternalPlugins` flag so configurator knows which mode
-- Prompt: "Show Prompts 1-4 for validator selection and options. Validators: {validators list}. scanExternalPlugins: {true|false}"
-- The configurator will invoke AskUserQuestion for remaining prompts:
-  1. Validator selection (multi-select)
-  2. Severity filter (multi-select)
-  3. Iteration count (single-select)
-  4. Test generation options
-- Capture the configuration JSON output
+### Step 1c: Validator Group Selection (UI/Styling)
+
+Use AskUserQuestion directly:
+
+**Question:** "Which UI/styling validators should run?"
+**Header:** "UI/Styling"
+**multiSelect:** true
+**Options:**
+- label: "Web Design Guidelines (web)"
+  description: "Accessibility, UX patterns, WCAG compliance"
+- label: "UI/UX Pro Max (uiux)"
+  description: "Icons, interactions, contrast, layout"
+- label: "Tailwind Design System (tailwind)"
+  description: "Tailwind v4, @theme, design tokens, CVA"
+- label: "Database Schema (db)"
+  description: "Normalization, constraints, indexes, migrations"
+
+### Step 1d: Severity and Iterations
+
+Use AskUserQuestion directly:
+
+**Question:** "Which severity levels should trigger fixes?"
+**Header:** "Severity"
+**multiSelect:** true
+**Options:**
+- label: "CRITICAL + HIGH (Recommended)"
+  description: "Fix blocking and significant issues only"
+- label: "All levels (CRITICAL, HIGH, MEDIUM, LOW)"
+  description: "Fix everything including minor suggestions"
+- label: "CRITICAL only"
+  description: "Only fix fatal blocking issues"
+- label: "CRITICAL, HIGH, MEDIUM"
+  description: "Skip LOW suggestions"
+
+### Step 1e: Iterations and Testing
+
+Use AskUserQuestion directly:
+
+**Question:** "Max iterations and test generation?"
+**Header:** "Options"
+**multiSelect:** false
+**Options:**
+- label: "5 iterations, no tests (Recommended)"
+  description: "Balanced validation without test generation"
+- label: "3 iterations, no tests"
+  description: "Quick pass with minimal iterations"
+- label: "5 iterations, with tests"
+  description: "Generate tests for fixes (slower)"
+- label: "10 iterations, with tests"
+  description: "Thorough validation with test generation"
+
+### Step 1f: Build Configuration
+
+After collecting all selections, build the configuration:
+
+1. Combine all selected validators from Steps 1a-1c
+2. Map severity selection to array (e.g., "CRITICAL + HIGH" → ["CRITICAL", "HIGH"])
+3. Extract iterations and test settings from Step 1e
+4. Display configuration summary:
+
+```
+───────────────────────────────────────────────────────────────
+ 📋 Configuration Summary
+───────────────────────────────────────────────────────────────
+
+Validators: {count} selected
+  {list each validator short code}
+
+Severity: {levels}
+Iterations: {max}
+Tests: {enabled/disabled}
+
+💡 Skip prompts next time with:
+   /fix-loop --validators ddd,dry,clean --severity critical,high --iterations 5
+───────────────────────────────────────────────────────────────
+```
 
 ### Step 2b: Validate & Merge Configuration
 
