@@ -34,6 +34,27 @@
       "description": "Validates UI code for accessibility, UX patterns, WCAG compliance - detects missing ARIA, poor contrast, inaccessible forms",
       "category": "accessibility",
       "version": "1.0.0"
+    },
+    {
+      "agentName": "tailwind-design-system-validator",
+      "displayName": "Tailwind Design System Validator",
+      "description": "Validates Tailwind CSS v4 patterns - @theme configuration, design tokens, CVA components, dark mode, animations, React 19 compatibility",
+      "category": "frontend",
+      "version": "1.0.0"
+    },
+    {
+      "agentName": "ui-ux-pro-max-validator",
+      "displayName": "UI/UX Pro Max Validator",
+      "description": "Validates UI/UX best practices - accessibility, icons, interactions, contrast, layout, color consistency",
+      "category": "accessibility",
+      "version": "1.0.0"
+    },
+    {
+      "agentName": "vercel-react-best-practices-validator",
+      "displayName": "Vercel React Best Practices Validator",
+      "description": "Validates React/Next.js performance - async patterns, bundle optimization, server/client patterns, re-render optimization, hydration",
+      "category": "react",
+      "version": "1.0.0"
     }
   ]
 }
