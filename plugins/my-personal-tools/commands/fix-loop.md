@@ -35,7 +35,18 @@ Check if CLI arguments were provided. Arguments format:
 --validators ddd,dry,clean,react,web
 --severity critical,high
 --iterations 5
+--confirm 2
+--tests disabled
 ```
+
+**CLI Arguments Reference:**
+| Argument | Values | Default | Description |
+|----------|--------|---------|-------------|
+| `--validators` | Comma-separated short codes | (interactive) | Which validators to run |
+| `--severity` | critical,high,medium,low | critical,high | Severity levels to fix |
+| `--iterations` | 1-10 | 5 | Max fix iterations |
+| `--confirm` | 1-3 | 2 | Consecutive clean passes required |
+| `--tests` | enabled/disabled | disabled | Generate tests for fixes |
 
 Use short codes from the Validator Agent Mapping table below.
 
@@ -154,7 +165,7 @@ Iterations: {max}
 Tests: {enabled/disabled}
 
 💡 Skip prompts next time with:
-   /fix-loop --validators ddd,dry,clean --severity critical,high --iterations 5
+   /fix-loop --validators ddd,dry,clean --severity critical,high --iterations 5 --confirm 2 --tests disabled
 ───────────────────────────────────────────────────────────────
 ```
 
