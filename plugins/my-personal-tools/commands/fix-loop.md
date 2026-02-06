@@ -7,13 +7,26 @@ allowed-tools: Bash(git *), Task, AskUserQuestion, TodoWrite, Read, Edit, Glob, 
 
 Iteratively validates code and fixes issues until no critical/high severity findings remain (inspired by the [Ralph Wiggum technique](https://awesomeclaude.ai/ralph-wiggum)).
 
+## Context Budget Rules
+
+**The main orchestrator MUST NOT do any of the following:**
+
+1. **Do NOT read changed files** with the Read tool — validators read files themselves in their own context windows
+2. **Do NOT run `git diff` without `--name-only` or `--stat`** — full diff output consumes thousands of tokens in the main context
+3. **Do NOT embed diff content in validator prompts** — Task tool prompts appear in the main context, so diff x N validators = context exhaustion
+4. **Do NOT launch `fix-loop-output-validator` subagents** — use inline format checks instead
+
+**WHY:** Task tool prompts are part of the main conversation context. A 500-line diff embedded in 9 validator prompts = 4,500 lines (~45K tokens) of duplicated text, which exhausts the context window before findings can even be processed.
+
+**INSTEAD:** Tell each validator to run the diff command themselves (e.g., `Run: git diff main...HEAD`). Each validator has its own context window and can fetch whatever it needs independently.
+
 ## Step 0: Display Version Banner
 
 **ALWAYS display this banner first, before anything else:**
 
 ```
 ═══════════════════════════════════════════════════════════════
- 🔄 Fix Loop v1.14.0 (my-personal-tools plugin)
+ 🔄 Fix Loop v1.15.0 (my-personal-tools plugin)
 ═══════════════════════════════════════════════════════════════
 ```
 
@@ -23,6 +36,9 @@ Iteratively validates code and fixes issues until no critical/high severity find
 - Base branch: !`git merge-base HEAD main 2>/dev/null && echo "main" || echo "HEAD~5"`
 - Files changed: !`git diff main...HEAD --name-only 2>/dev/null || git diff HEAD~5...HEAD --name-only`
 - File count: !`git diff main...HEAD --name-only 2>/dev/null | wc -l || git diff HEAD~5...HEAD --name-only | wc -l`
+- Diff summary: !`git diff main...HEAD --stat 2>/dev/null || git diff HEAD~5...HEAD --stat`
+
+> **WARNING:** Do NOT run `git diff` without `--name-only` or `--stat` in the main context. Full diff output belongs ONLY inside validator subagent context windows.
 
 ## Your Task
 
@@ -37,6 +53,7 @@ Check if CLI arguments were provided. Arguments format:
 --iterations 5
 --confirm 2
 --tests disabled
+--scope branch
 ```
 
 **CLI Arguments Reference:**
@@ -47,6 +64,7 @@ Check if CLI arguments were provided. Arguments format:
 | `--iterations` | 1-10 | 5 | Max fix iterations |
 | `--confirm` | 1-3 | 2 | Consecutive clean passes required |
 | `--tests` | enabled/disabled | disabled | Generate tests for fixes |
+| `--scope` | branch/uncommitted | branch | `branch`: `git diff main...HEAD`, `uncommitted`: `git diff HEAD` |
 
 Use short codes from the Validator Agent Mapping table below.
 
@@ -176,6 +194,9 @@ Tests: {enabled/disabled}
 - Warn if a validator is selected but not found: "⚠️ Validator X not found during discovery, skipping"
 - Build final selectedValidators list with agent names from discovered metadata
 - Store: severity levels, maxIterations
+- Derive `diffCmd` from `--scope` flag:
+  - `branch` (default): `diffCmd = "git diff main...HEAD"`, `diffNameOnly = "git diff main...HEAD --name-only"`, `diffStat = "git diff main...HEAD --stat"`
+  - `uncommitted`: `diffCmd = "git diff HEAD"`, `diffNameOnly = "git diff HEAD --name-only"`, `diffStat = "git diff HEAD --stat"`
 - Confirm configuration is ready to proceed
 
 ### Step 2c: Extract Test Configuration
@@ -254,120 +275,85 @@ Example:
    Scope: 12 files changed vs main
 ```
 
-#### 4b. Run Validators in Parallel
+#### 4b. Run Validators (with Batching)
 
-Use Task tool to launch only **active** validator agents **in parallel** (skip retired validators entirely):
+Use Task tool to launch only **active** validator agents (skip retired validators entirely).
 
-**DDD/OOP Validator prompt:**
+**Batching rule:** If 5+ validators are active, launch in batches of max 4 in parallel. Wait for each batch to complete before launching the next. If fewer than 5 are active, launch all in parallel.
+
+**Validator Focus Areas:**
+
+| Short Code | Focus | Check for |
+|------------|-------|-----------|
+| `ddd` | DDD/OOP compliance | Anemic domain models, Tell/Don't Ask violations, method placement, parameter bloat |
+| `dry` | DRY violations | Duplicated constants/enums, repeated logic patterns, magic strings/numbers, code that should be unified |
+| `clean` | Clean code principles | Long functions (>20 lines), poor naming, SOLID violations, code smells (feature envy, god class) |
+| `react` | React/Next.js patterns | Hook rules, useState overuse, missing memoization, RSC boundary issues |
+| `next` | Next.js best practices | File conventions, async APIs, metadata, error handling, route handlers |
+| `vercel` | Vercel performance | Async patterns, bundle optimization, server/client patterns, hydration |
+| `vue` | Vue.js patterns | Composition API, reactivity, computed, watchers, props, TypeScript |
+| `web` | Web design guidelines | Accessibility, UX patterns, WCAG compliance, responsive design |
+| `uiux` | UI/UX quality | Icons, interactions, contrast, layout, color consistency |
+| `tailwind` | Tailwind design system | Tailwind v4, @theme, design tokens, CVA patterns, dark mode |
+| `api` | API design principles | REST/GraphQL patterns, resource naming, pagination, error handling |
+| `db` | Database schema design | Normalization, constraints, indexes, data types, migrations |
+
+**Prompt template for ALL validators** (substitute `{focus}` and `{checks}` from table above):
+
 ```
-Validate the branch diff for DDD/OOP compliance.
+Validate changed code for {focus}.
+Scope: Run `{diffCmd}` to see the full diff of changes.
+Changed files: {file_list}
 
-**CRITICAL SCOPE CONSTRAINT:**
-- ONLY report findings on lines that appear in the git diff (lines starting with `+`)
-- If an issue exists in a file but the code was NOT modified in this branch, do NOT report it
-- The goal is to validate the CHANGES, not the entire codebase
-- Before reporting any finding, verify the problematic code appears in the diff
+Instructions:
+1. Run `{diffCmd}` yourself to get the full diff
+2. Use Read tool to examine changed files for full context
+3. ONLY flag issues on changed lines (lines with `+` prefix in the diff)
+4. Do NOT report issues in code that was not modified
 
-Changed files:
-{list of changed files}
+Check for: {checks}
 
-Git diff to analyze:
-{paste actual git diff main...HEAD output here}
+Output format (one block per finding):
+{severity_emoji} {SEVERITY}: {description}
+   📍 {file}:{line}
+   💡 {recommendation}
 
-Check for:
-- Anemic domain models (data without behavior)
-- Tell/Don't Ask violations (extracting data to decide externally)
-- Method placement (logic in wrong object/service)
-- Parameter bloat (too many primitives)
-
-Output findings with:
-- Severity: 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW
-- Location: 📍 file:line
-- Recommendation: 💡 how to fix
-```
-
-**DRY Validator prompt:**
-```
-Validate the branch diff for DRY violations.
-
-**CRITICAL SCOPE CONSTRAINT:**
-- ONLY report findings on lines that appear in the git diff (lines starting with `+`)
-- If an issue exists in a file but the code was NOT modified in this branch, do NOT report it
-- The goal is to validate the CHANGES, not the entire codebase
-- Before reporting any finding, verify the problematic code appears in the diff
-
-Changed files:
-{list of changed files}
-
-Git diff to analyze:
-{paste actual git diff main...HEAD output here}
-
-Check for:
-- Duplicated constants/enums
-- Repeated logic patterns
-- Magic strings/numbers
-- Similar code that should be unified
-
-Output findings with:
-- Severity: 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW
-- Location: 📍 file:line (for each occurrence)
-- Recommendation: 💡 how to fix
+Severity levels: 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW
 ```
 
-**Clean Code Validator prompt:**
+**Example** — launching DDD validator with `diffCmd = "git diff main...HEAD"`:
+
 ```
-Validate the branch diff for clean code principles.
+Validate changed code for DDD/OOP compliance.
+Scope: Run `git diff main...HEAD` to see the full diff of changes.
+Changed files: src/domain/User.ts, src/services/OrderService.ts, ...
 
-**CRITICAL SCOPE CONSTRAINT:**
-- ONLY report findings on lines that appear in the git diff (lines starting with `+`)
-- If an issue exists in a file but the code was NOT modified in this branch, do NOT report it
-- The goal is to validate the CHANGES, not the entire codebase
-- Before reporting any finding, verify the problematic code appears in the diff
+Instructions:
+1. Run `git diff main...HEAD` yourself to get the full diff
+2. Use Read tool to examine changed files for full context
+3. ONLY flag issues on changed lines (lines with `+` prefix in the diff)
+4. Do NOT report issues in code that was not modified
 
-Changed files:
-{list of changed files}
+Check for: Anemic domain models, Tell/Don't Ask violations, method placement, parameter bloat
 
-Git diff to analyze:
-{paste actual git diff main...HEAD output here}
+Output format (one block per finding):
+{severity_emoji} {SEVERITY}: {description}
+   📍 {file}:{line}
+   💡 {recommendation}
 
-Check for:
-- Long functions (>20 lines)
-- Poor naming (unclear intent)
-- SOLID violations
-- Code smells (feature envy, god class, etc.)
-
-Output findings with:
-- Severity: 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW
-- Location: 📍 file:line
-- Recommendation: 💡 how to fix
+Severity levels: 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW
 ```
 
-#### 4b.1: Validate & Parse Validator Output
+#### 4b.1: Inline Output Format Check
 
-For each validator that completed:
+For each validator that completed, do a quick inline check (NO subagent):
 
-1. **Check output format compliance**
-   - Use `my-personal-tools:fix-loop-output-validator` agent to validate the actual output
-   - Pass the validator's complete output text
-   - Receive JSON validation result
-
-2. **Log validation result**
-   - If valid: log "✅ {validator_name}: output format valid"
-   - If invalid: log "⚠️ {validator_name}: output format non-compliant, attempting to parse anyway"
-
-3. **Proceed to parsing**
-   - Both valid and invalid outputs proceed to Step 4c for parsing
-   - Invalid outputs may have some findings skipped if unparseable
-   - Non-blocking: one validator's format issues don't stop others
-
-Example:
-```
-Validating outputs:
-  ✅ ddd-oop-validator: output format valid
-  ✅ dry-violations-detector: output format valid
-  ⚠️ react-best-practices-validator: output format non-compliant
-     (Parsing anyway - some findings may be skipped)
-```
+1. **Scan output** for severity emojis (🔴, 🟠, 🟡, 🟢) and location markers (📍)
+2. **Log result:**
+   - If emojis and locations found: `✅ {validator_name}: output parseable`
+   - If no emojis found: `ℹ️ {validator_name}: no findings (clean)`
+   - If emojis found but no locations: `⚠️ {validator_name}: findings lack locations, parsing may skip some`
+3. **Proceed to Step 4c** — both valid and malformed outputs go to regex parsing
 
 #### 4c. Filter and Count Findings
 
@@ -581,19 +567,24 @@ Only pass findings from **active** validators that had issues this iteration to 
 ───────────────────────────────────────────────────────────────
 ```
 
-Use Task tool to launch `my-personal-tools:fix-loop-fixer` agent:
+Use Task tool to launch `my-personal-tools:fix-loop-fixer` agent.
+
+**Fixer prompt must contain ONLY structured findings** (3 lines per finding: severity, location, recommendation). Do NOT include file contents, diff output, or validator raw output in the fixer prompt.
 
 ```
-Apply fixes for the following validation findings:
+Apply fixes for the following validation findings.
+Use Read tool to examine each file before fixing. Do NOT include file contents or diff output in your response.
 
-{paste findings from active validators only, with severity, location, recommendation}
-
-Read each file, apply the recommended fix, and report what was changed.
+Findings to fix:
+{for each finding, exactly 3 lines:}
+{severity_emoji} {SEVERITY}: {description}
+   📍 {file}:{line}
+   💡 {recommendation}
 
 Output format for each fix:
 ✅ Fixed: [description]
    📍 file:line
-   📝 [explanation]
+   📝 [brief explanation of what changed]
 
 Or if skipped:
 ⚠️ Skipped: [reason]
@@ -825,16 +816,28 @@ Tests Status: {✅ All passing | ❌ {n} failing}
 ## Important Notes
 
 - Always run **active** validators in **parallel** using multiple Task tool calls (skip retired validators)
+- **Batching:** If 5+ validators are active, launch in batches of max 4 in parallel. Wait for each batch to complete before launching the next
 - Each validator tracks its own lifecycle: `cleanPasses`, `stallCount`, `previousIssueCount`, `status`
 - A validator retires clean after `confirmationLoops` consecutive clean passes (default: 2)
 - A validator retires stalled after 2 consecutive iterations with the same issue count
 - If a validator had clean passes but then finds new issues (e.g. introduced by another fix), its `cleanPasses` resets to 0
 - The loop ends when all validators are retired OR global max iterations is reached
 - The fixer agent is: `my-personal-tools:fix-loop-fixer`
-- Scope is always **branch diff** (files changed vs main or HEAD~5)
+- **Scope:** Controlled by `--scope` flag. `branch` (default) = `git diff main...HEAD`, `uncommitted` = `git diff HEAD`
 - Be transparent: show per-validator status after each iteration
 - Test generation is **optional** - can be disabled for faster iteration
 - Test-driven fixing uses the same active validators, just with new context (test failures)
 - If tests fail consistently, likely indicates deeper issue requiring manual review
 - Test generation agent will skip trivial code (getters, simple pass-throughs)
 - Test output parsing tolerates some variation but warns on unparseable tests
+
+### Context Budget Reminders
+
+These rules are **critical** for preventing context window exhaustion when running many validators:
+
+1. **NEVER read changed files** in the main context — validators have their own context windows and read files themselves
+2. **NEVER run `git diff` without `--name-only` or `--stat`** in the main context — full diff output wastes thousands of tokens
+3. **NEVER embed diff content in validator prompts** — tell validators to run `{diffCmd}` themselves
+4. **NEVER use `fix-loop-output-validator` subagents** — use inline emoji/location scan instead
+5. **ALWAYS use the compact prompt template** from Step 4b — ~15 lines per validator, not ~(30 + diff_size)
+6. **ALWAYS pass only structured findings** (3 lines each) to the fixer — no raw output, no file contents
