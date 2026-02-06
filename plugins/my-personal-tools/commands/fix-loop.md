@@ -13,7 +13,7 @@ Iteratively validates code and fixes issues until no critical/high severity find
 
 ```
 ═══════════════════════════════════════════════════════════════
- 🔄 Fix Loop v1.13.0 (my-personal-tools plugin)
+ 🔄 Fix Loop v1.14.0 (my-personal-tools plugin)
 ═══════════════════════════════════════════════════════════════
 ```
 
@@ -203,10 +203,23 @@ Create a todo list to track the loop:
 Initialize variables:
 - `iteration = 1`
 - `totalFixed = 0`
-- `previousIssueCount = Infinity`
-- `stallCount = 0`
-- `cleanLoopCount = 0` - tracks consecutive clean passes
 - `confirmationLoops` - number of clean passes required (default: 2, from config)
+
+Initialize **per-validator state** for each selected validator:
+
+```
+validatorStates = {}
+for each selectedValidator:
+  validatorStates[validator.name] = {
+    status: "active",
+    cleanPasses: 0,
+    stallCount: 0,
+    previousIssueCount: 0,
+    retiredAtIteration: null
+  }
+```
+
+Each validator tracks its own lifecycle independently. Validators retire individually when they reach their clean pass threshold or stall out. The loop ends when all validators are retired (or global max iterations hit as safety net).
 
 ### Step 4: Run Iteration Loop
 
@@ -214,31 +227,36 @@ For each iteration until termination:
 
 #### 4a. Display Iteration Header
 
+Determine which validators are still active:
+```
+activeValidators = all validators where validatorStates[name].status == "active"
+retiredValidators = all validators where validatorStates[name].status != "active"
+```
+
+If `activeValidators` is empty → go to Step 5 (Summary).
+
+Display iteration header:
+
 ```
 ═══════════════════════════════════════════════════════════════
  🔄 Iteration {n}/{max}
 ═══════════════════════════════════════════════════════════════
 
-📋 Running validators: {selected validators}
+📋 Active validators: {active validator names}
+   Retired: {count retired} ({list retired names with ✅/⚠️ status})
    Scope: {file count} files changed vs main
 ```
 
-#### 4a.1: Log Selected Validators
-
-Display which validators will run:
-
+Example:
 ```
-📋 Running validation loop with:
-   Validators: {count} selected
-     {validator name 1}
-     {validator name 2}
-   Severity: {CRITICAL, HIGH, etc.}
-   Max iterations: {number}
+📋 Active validators: ddd-oop-validator, clean-code-validator
+   Retired: 2 (✅ react-nextjs-validator, ⚠️ dry-violations-detector)
+   Scope: 12 files changed vs main
 ```
 
 #### 4b. Run Validators in Parallel
 
-Use Task tool to launch selected validator agents **in parallel**:
+Use Task tool to launch only **active** validator agents **in parallel** (skip retired validators entirely):
 
 **DDD/OOP Validator prompt:**
 ```
@@ -414,14 +432,21 @@ If parsing fails for any line:
 
 Continue without stopping - prioritize fix-loop robustness.
 
-**Counting:**
+**Counting (per-validator):**
 
-Count all successfully parsed findings that match selectedSeverity:
+Group all successfully parsed findings **by source validator**, then count per-validator:
 ```
-currentIssueCount = number of matching findings
+for each activeValidator:
+  validatorFindings[name] = findings from this validator matching selectedSeverity
+  validatorIssueCount[name] = count of those findings
 ```
 
-Log the count with breakdown:
+Also compute total for display:
+```
+currentIssueCount = sum of all validatorIssueCount values
+```
+
+Log the total with breakdown:
 ```
 Found {currentIssueCount} issues:
   🔴 CRITICAL: {count}
@@ -430,63 +455,86 @@ Found {currentIssueCount} issues:
   🟢 LOW: {count}
 ```
 
-#### 4d. Check Termination Conditions
+#### 4d. Update Per-Validator State and Check Termination
 
-**Condition 1: Clean Pass Detected**
-If `currentIssueCount == 0`:
-  `cleanLoopCount++`
+For each **active** validator, count its findings from Step 4c and update its state:
 
-  If `cleanLoopCount >= confirmationLoops`:
-    ```
-    ───────────────────────────────────────────────────────────────
-     ✅ No {severity levels} issues found!
-        Confirmed with {cleanLoopCount} consecutive clean pass(es).
-    ───────────────────────────────────────────────────────────────
-    ```
-    → Go to Step 5 (Summary)
+```
+for each activeValidator:
+  issueCount = count of findings from this validator matching selectedSeverity
 
-  Else:
-    ```
-    ───────────────────────────────────────────────────────────────
-     ✅ Clean pass {cleanLoopCount}/{confirmationLoops}
-        Continuing for confirmation...
-    ───────────────────────────────────────────────────────────────
-    ```
-    → Continue to next iteration (Step 4k)
+  if issueCount == 0:
+    # Clean pass
+    validatorStates[name].cleanPasses++
+    validatorStates[name].stallCount = 0
 
-**Reset clean loop count:**
-If `currentIssueCount > 0`:
-  `cleanLoopCount = 0`
+    if validatorStates[name].cleanPasses >= confirmationLoops:
+      validatorStates[name].status = "retired-clean"
+      validatorStates[name].retiredAtIteration = iteration
+      log: "✅ {name}: Retired clean ({cleanPasses}/{confirmationLoops} passes) at iteration {iteration}"
+    else:
+      log: "{name}: clean pass {cleanPasses}/{confirmationLoops}"
+
+  else:
+    # Found issues - reset clean counter
+    validatorStates[name].cleanPasses = 0
+
+    # Stall detection: same issue count as last run?
+    if issueCount == validatorStates[name].previousIssueCount:
+      validatorStates[name].stallCount++
+      if validatorStates[name].stallCount >= 2:
+        validatorStates[name].status = "retired-stalled"
+        validatorStates[name].retiredAtIteration = iteration
+        log: "⚠️ {name}: Retired stalled at iteration {iteration} ({issueCount} issues remaining)"
+    else:
+      validatorStates[name].stallCount = 0
+
+    validatorStates[name].previousIssueCount = issueCount
+```
+
+Display per-validator status summary:
+
+```
+───────────────────────────────────────────────────────────────
+ Validator Status (Iteration {n}):
+   {for each validator, show one of:}
+   ✅ {name}: Retired clean ({cleanPasses}/{confirmationLoops}) at iteration {n}
+   ⚠️ {name}: Retired stalled at iteration {n} ({issueCount} remaining)
+   🔄 {name}: {issueCount} issues (clean {cleanPasses}/{confirmationLoops}, stall {stallCount}/2)
+   🔄 {name}: clean pass {cleanPasses}/{confirmationLoops}
+───────────────────────────────────────────────────────────────
+```
+
+**Check termination conditions:**
+
+**Condition 1: All Validators Retired**
+If no validators have `status == "active"`:
+```
+───────────────────────────────────────────────────────────────
+ ✅ All validators retired.
+───────────────────────────────────────────────────────────────
+```
+→ Go to Step 5 (Summary)
 
 **Condition 2: Max Iterations**
 If `iteration >= maxIterations`:
 ```
 ───────────────────────────────────────────────────────────────
- ⏹️ Max iterations reached. {currentIssueCount} issues remaining.
+ ⏹️ Max iterations reached. {count active} validators still active.
 ───────────────────────────────────────────────────────────────
 ```
-→ Go to Step 4 (Summary)
+→ Go to Step 5 (Summary)
 
-**Condition 3: Stall Detection**
-If `currentIssueCount >= previousIssueCount`:
-  `stallCount++`
-  If `stallCount >= 2`:
-```
-───────────────────────────────────────────────────────────────
- ⚠️ No progress for 2 iterations. Stopping to prevent infinite loop.
-    {currentIssueCount} issues may require manual intervention.
-───────────────────────────────────────────────────────────────
-```
-→ Go to Step 4 (Summary)
-
-Otherwise, reset `stallCount = 0`.
+Otherwise → continue to Step 4e with findings from active validators that had issues.
 
 #### 4e. Display Findings
+
+Only display findings from **active** validators that had issues this iteration (skip retired validators):
 
 ```
 ───────────────────────────────────────────────────────────────
  Found {count} issues ({breakdown by severity})
- From validators: {comma-separated list of validators that found issues}
+ From active validators: {comma-separated list of active validators that found issues}
 ───────────────────────────────────────────────────────────────
 
 {For each finding, display in this format:}
@@ -525,9 +573,11 @@ Otherwise, reset `stallCount = 0`.
 
 #### 4f. Apply Fixes
 
+Only pass findings from **active** validators that had issues this iteration to the fixer (not retired validators):
+
 ```
 ───────────────────────────────────────────────────────────────
- 🔧 Fixing {count} issues...
+ 🔧 Fixing {count} issues from {active validator count} active validators...
 ───────────────────────────────────────────────────────────────
 ```
 
@@ -536,7 +586,7 @@ Use Task tool to launch `my-personal-tools:fix-loop-fixer` agent:
 ```
 Apply fixes for the following validation findings:
 
-{paste all findings with severity, location, recommendation}
+{paste findings from active validators only, with severity, location, recommendation}
 
 Read each file, apply the recommended fix, and report what was changed.
 
@@ -677,18 +727,18 @@ Check termination conditions:
 If all tests passed in 4i → Success, go to Step 5 (Summary)
 
 **Condition 2: Test failures with iterations remaining**
-If tests failed AND iteration < maxIterations:
+If tests failed AND iteration < maxIterations AND active validators remain:
 ```
-→ Re-running validators with test failure context...
+→ Re-running active validators with test failure context...
 ```
-Pass to validators:
+Pass to active validators only:
 - Test failure analysis from 4i
 - Implementation code that failed tests
 - Original validator context
 
 Validators will receive NEW context: tests expect X, implementation does Y, fix needed.
 
-Reset: `iteration++`, go back to 4b (Run Validators) but with failure context
+Reset: `iteration++`, go back to 4b (Run active Validators) but with failure context
 
 **Condition 3: Max iterations with failures**
 If iteration >= maxIterations AND tests still failing:
@@ -697,35 +747,27 @@ If iteration >= maxIterations AND tests still failing:
 ```
 → Go to Step 5 (Summary) with warning
 
-**Condition 4: Stall (no progress for 2 iterations)**
-If same tests fail identically for 2 iterations:
+**Condition 4: All validators retired**
+If no active validators remain:
 ```
-⚠️ No test progress for 2 iterations. Stopping.
+All validators retired. {n} tests still failing.
 ```
 → Go to Step 5 (Summary)
 
 #### 4k. Continue Next Iteration
 
 If continuing to next iteration:
-- Update: `previousIssueCount` (for stall detection)
 - Update: `iteration++`
 - Mark todo completed, next marked as in_progress
 - Go back to 4a (Iteration header)
 
-#### 4l. Continue Loop
-
-```
-→ Continuing to iteration {n+1}...
-```
-
-Update:
-- `previousIssueCount = currentIssueCount`
-- `iteration++`
-- Mark current todo as completed, next as in_progress
-
-Go back to Step 4a.
+Note: per-validator `previousIssueCount` is already updated in Step 4d.
 
 ### Step 5: Generate Final Summary
+
+Determine overall status:
+- If all validators are `retired-clean` → `✅ Fix Loop Complete`
+- If any validator is `retired-stalled` or still `active` (max iterations) → `⚠️ Fix Loop Stopped`
 
 ```
 ═══════════════════════════════════════════════════════════════
@@ -733,17 +775,21 @@ Go back to Step 4a.
 ═══════════════════════════════════════════════════════════════
 
 Iterations: {used}/{max}
-Confirmation: {cleanLoopCount}/{confirmationLoops} clean passes
 Issues fixed: {totalFixed}
-Remaining issues: {currentIssueCount}
+
+Validator Results:
+  {for each validator, show:}
+  ✅ {name}: Retired clean ({cleanPasses}/{confirmationLoops} passes) at iteration {n}
+  ⚠️ {name}: Retired stalled at iteration {n} ({previousIssueCount} issues remaining)
+  🔄 {name}: Still active ({previousIssueCount} issues, max iterations reached)
+
+{If any validator is retired-stalled or still active:}
+📋 Remaining issues require manual review:
+{list last findings from stalled/active validators}
 
 {If test generation was enabled:}
 Tests Generated: {count}
 Tests Status: {✅ All passing | ❌ {n} failing}
-
-{If remaining issues > 0}
-📋 Remaining issues require manual review:
-{list remaining issues}
 
 {If test generation enabled and tests failing}
 ⚠️ {n} tests still failing:
@@ -778,13 +824,17 @@ Tests Status: {✅ All passing | ❌ {n} failing}
 
 ## Important Notes
 
-- Always run validators in **parallel** using multiple Task tool calls
+- Always run **active** validators in **parallel** using multiple Task tool calls (skip retired validators)
+- Each validator tracks its own lifecycle: `cleanPasses`, `stallCount`, `previousIssueCount`, `status`
+- A validator retires clean after `confirmationLoops` consecutive clean passes (default: 2)
+- A validator retires stalled after 2 consecutive iterations with the same issue count
+- If a validator had clean passes but then finds new issues (e.g. introduced by another fix), its `cleanPasses` resets to 0
+- The loop ends when all validators are retired OR global max iterations is reached
 - The fixer agent is: `my-personal-tools:fix-loop-fixer`
 - Scope is always **branch diff** (files changed vs main or HEAD~5)
-- Stop if no progress for 2 consecutive iterations (prevents infinite loops)
-- Be transparent: show what's being fixed before and after
+- Be transparent: show per-validator status after each iteration
 - Test generation is **optional** - can be disabled for faster iteration
-- Test-driven fixing uses the same validators, just with new context (test failures)
+- Test-driven fixing uses the same active validators, just with new context (test failures)
 - If tests fail consistently, likely indicates deeper issue requiring manual review
 - Test generation agent will skip trivial code (getters, simple pass-throughs)
 - Test output parsing tolerates some variation but warns on unparseable tests
