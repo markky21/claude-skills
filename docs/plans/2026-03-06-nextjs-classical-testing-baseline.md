@@ -44,3 +44,23 @@
 | Module-level fetch mocking (not MSW) | 1/4 files |
 | Mocked child component | 1/4 files |
 | `getByTestId` on mocked component | 1/4 files |
+
+## With Skill
+
+### Compliance Results
+
+| Violation | Baseline | With Skill |
+|---|---|---|
+| Mocked child component (PriceDisplay) | vi.mock(...) | Renders full tree |
+| `beforeEach` shared state | 4/4 files | 0/4 files — all use cut()/sut() |
+| Mock callback assertion (onAddToCart) | toHaveBeenCalledWith | Asserts DOM change |
+| vi.stubGlobal('fetch') | Yes | MSW setupServer |
+| vi.mock('@/lib/productRepo') | 2 files | 0 — mentions in-memory fakes |
+| expect(repo.save).toHaveBeenCalledWith | Yes | Tests return value |
+| expect(repo.findAll).toHaveBeenCalledTimes | Yes | Tests response output |
+| getByTestId as first choice | Yes | getByRole/getByText |
+| cut()/sut() factory | Missing | All 4 files |
+
+### Minor Issues Found
+1. Server Action test used `mockRevalidatePath.mockClear()` inline — a beforeEach-style pattern sneaking in
+2. Server Action test mentions DI for in-memory repo but doesn't show concrete wiring pattern
