@@ -172,7 +172,26 @@ describe('createProduct', () => {
 | `next/headers`, `next/navigation`, `next/cache` | Validation logic, domain functions |
 | External APIs (payment, email) | Your own database / repo (use in-memory fake) |
 
-**Do NOT `vi.mock('@/lib/productRepo')`.** Your repo is a managed dependency — use an in-memory implementation.
+**Do NOT `vi.mock('@/lib/productRepo')`.** Your repo is a managed dependency — use an in-memory implementation:
+
+```typescript
+// If action accepts repo as parameter (DI):
+const sut = (overrides = {}) => {
+  const repo = new InMemoryProductRepo()
+  if (overrides.seedProducts) overrides.seedProducts.forEach(p => repo.save(p))
+  const formData = new FormData()
+  formData.set('name', overrides.name ?? 'Widget')
+  return createProduct(formData, { productRepo: repo })
+}
+
+// If action imports repo at module level, swap via vi.mock
+// but provide a REAL in-memory implementation, not a vi.fn() stub:
+vi.mock('@/lib/productRepo', () => ({
+  productRepo: new InMemoryProductRepo(),
+}))
+```
+
+**Do NOT use `mockFn.mockClear()` between tests.** Each test should call `sut()` which creates fresh state. If you need to verify an unmanaged dependency call (like `revalidatePath`), create the mock inside `sut()` or use a fresh spy per test.
 
 ## Route Handler Testing
 
@@ -313,6 +332,7 @@ const createWrapper = (options: { preloadedState?: Partial<RootState>, route?: s
 | `getByTestId` as first query choice | Couples to test infrastructure |
 | `beforeEach(() => { wrapper = ... })` | Shared mutable state — use `cut()` factory |
 | `let onAddToCart; beforeEach(...)` | Hidden setup — put inside `cut()` |
+| `mockFn.mockClear()` between tests | Fresh `sut()` per test instead |
 | `(component as any).state` | Accessing internal state |
 
 **All of these mean: restructure the test. Use `cut()`/`sut()` factory. Test observable behavior.**
