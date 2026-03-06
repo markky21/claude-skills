@@ -13,6 +13,7 @@ Black-box testing based on Khorikov's "Unit Testing" book and the Classical/Detr
 
 **REQUIRED BACKGROUND:** superpowers:test-driven-development for TDD workflow.
 **Vue-specific patterns:** See vue-classical-testing for component rendering contract tests.
+**React/Next.js patterns:** See nextjs-classical-testing for RTL rendering contracts, hooks, Server Actions, Route Handlers, and MSW.
 
 ## What to Test — Khorikov's 4 Quadrants
 
